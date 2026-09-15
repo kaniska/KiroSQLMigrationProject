@@ -1,0 +1,14 @@
+{
+  "_comment": "Values the self-test binds into ?port? placeholders (SQL / Stored Procedure transformations) and :TU.port references (Update Override). Give string values with their quotes.",
+  "?CustomerId?": 1,
+  "?OrderId?": 6,
+  "?ShipToZip?": "'10001'",
+  "?IsExpedited?": "FALSE",
+  ":TU.email": "'alice.updated@example.com'",
+  ":TU.last_name": "'Smith-Updated'",
+  ":TU.customer_key": 1,
+  ":TU.order_count": 9,
+  ":TU.lifetime_amount": 9999.5,
+  ":TU.segment_code": "'GOLD'",
+  ":TU.customer_id": 1
+}

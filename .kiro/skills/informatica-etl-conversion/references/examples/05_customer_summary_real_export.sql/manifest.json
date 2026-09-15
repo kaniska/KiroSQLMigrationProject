@@ -1,0 +1,130 @@
+{
+  "source_xml": "05_customer_summary_real_export.sqlserver.xml",
+  "source_sha256": "f8e394d8ce39a08b27d356e18452f6d1d59a7b3996b74831d62877ee13f94917",
+  "encoding": "windows-1252",
+  "tool_version": "2.0.0",
+  "entries": [
+    {
+      "id": 1,
+      "file": "01_SQ_Orders_Sql_Query.sql",
+      "kind": "sq_override",
+      "attribute": "Sql Query",
+      "tag_index": 0,
+      "sha256": "8ef9d22488f036101ccb1a2a4694db9ddee8e29d924011e2f00183799e1c87e3",
+      "folder": "SALES_DW",
+      "mapping": "m_Load_Customer_Summary",
+      "scope": "mapping",
+      "object": "m_Load_Customer_Summary",
+      "instance": "SQ_Orders",
+      "owner_type": "Source Qualifier",
+      "params": [
+        "$$AS_OF_DATE"
+      ],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "Orders",
+        "Customers"
+      ],
+      "output_ports": 7
+    },
+    {
+      "id": 2,
+      "file": "02_LKP_Customer_Segment_Lookup_Sql_Override.sql",
+      "kind": "lookup_override",
+      "attribute": "Lookup Sql Override",
+      "tag_index": 11,
+      "sha256": "d8a19f4b84146972ad328df940ba5298c76219beffdde05bc0eb93fddee9b271",
+      "folder": "SALES_DW",
+      "mapping": "m_Load_Customer_Summary",
+      "scope": "mapping",
+      "object": "m_Load_Customer_Summary",
+      "instance": "LKP_Customer_Segment",
+      "owner_type": "Lookup Procedure",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 3,
+      "file": "03_LKP_Customer_Segment_Lookup_table_name.sql",
+      "kind": "lookup_table",
+      "attribute": "Lookup table name",
+      "tag_index": 12,
+      "sha256": "d74a9750fee3d69b0a01b45af7ca229e18a136c2b9bd3d3a3c1db079705a6bdc",
+      "folder": "SALES_DW",
+      "mapping": "m_Load_Customer_Summary",
+      "scope": "mapping",
+      "object": "m_Load_Customer_Summary",
+      "instance": "LKP_Customer_Segment",
+      "owner_type": "Lookup Procedure",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 4,
+      "file": "04_Stg_Customer_Summary_Update_Override.sql",
+      "kind": "update_override",
+      "attribute": "Update Override",
+      "tag_index": 22,
+      "sha256": "6cb82f6f6b6bb6513e13dff24840c5c929483fd804f36a8bd4d5719174c0c8c9",
+      "folder": "SALES_DW",
+      "mapping": "m_Load_Customer_Summary",
+      "scope": "mapping",
+      "object": "m_Load_Customer_Summary",
+      "instance": "Stg_Customer_Summary",
+      "owner_type": "Target Definition",
+      "params": [],
+      "ports": [],
+      "tu_refs": [
+        ":TU.CustomerId",
+        ":TU.LifetimeAmount",
+        ":TU.OrderCount",
+        ":TU.SegmentCode"
+      ]
+    },
+    {
+      "id": 5,
+      "file": "05_Stg_Customer_Summary_Pre_SQL.sql",
+      "kind": "pre_sql",
+      "attribute": "Pre SQL",
+      "tag_index": 34,
+      "sha256": "45ee02ba76b78f7227c2737af9a0000ebe72df78e21138d081647aa60d11f38f",
+      "folder": "SALES_DW",
+      "mapping": "m_Load_Customer_Summary",
+      "scope": "session",
+      "object": "s_m_Load_Customer_Summary",
+      "instance": "Stg_Customer_Summary",
+      "owner_type": "Target Definition",
+      "params": [
+        "$$LOAD_ID"
+      ],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 6,
+      "file": "06_Stg_Customer_Summary_Post_SQL.sql",
+      "kind": "post_sql",
+      "attribute": "Post SQL",
+      "tag_index": 35,
+      "sha256": "54688fec584b87ed6d4708726249fb1a076825ed102d0a8125ed8d8244d123e3",
+      "folder": "SALES_DW",
+      "mapping": "m_Load_Customer_Summary",
+      "scope": "session",
+      "object": "s_m_Load_Customer_Summary",
+      "instance": "Stg_Customer_Summary",
+      "owner_type": "Target Definition",
+      "params": [
+        "$$LOAD_ID"
+      ],
+      "ports": [],
+      "tu_refs": []
+    }
+  ],
+  "notes": [
+    "s_m_Load_Customer_Summary/Stg_Customer_Summary: Target load type = Bulk → set Normal for PostgreSQL ODBC targets (IC-19)"
+  ],
+  "security": []
+}

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE POWERMART SYSTEM "powrmart.dtd">
+<!-- Worked example 02: customer dimension load (SCD type 1).
+     Corner cases: Source Qualifier WITHOUT an override but with a User Defined Join in
+     Informatica { } syntax, a Source Filter fragment (LIKE under a CI collation), Number Of
+     Sorted Ports = 1 on a string port (collation trap), a Lookup SQL override with port
+     aliases + ORDER BY + a trailing double-dash, "Lookup table name" with dbo., a mapping-level
+     Update Override with :TU. port references and GETDATE(), an Update Strategy expression
+     (Informatica language, untouched), session Pre SQL that is a T-SQL variable batch
+     (must become a function call), session Post SQL containing MERGE, &#39; numeric entity. -->
+<POWERMART CREATION_DATE="09/12/2026 14:05:40" REPOSITORY_VERSION="188.97">
+<REPOSITORY NAME="REP_SALES_DW" VERSION="188" CODEPAGE="UTF-8" DATABASETYPE="Microsoft SQL Server">
+<FOLDER NAME="SALES_DW" GROUP="" OWNER="etl_admin" SHARED="NOTSHARED" DESCRIPTION="" PERMISSIONS="rwx---r--" UUID="7f3a0e2c-1b4d-4c8e-9a10-0d5b2f6c1e01">
+    <SOURCE BUSINESSNAME="" DATABASETYPE="PostgreSQL" DBDNAME="SalesDB" DESCRIPTION="" NAME="customers" OBJECTVERSION="1" OWNERNAME="public" VERSIONNUMBER="1">
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="int4" DESCRIPTION="" FIELDNUMBER="1" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="PRIMARY KEY" LENGTH="0" LEVEL="0" NAME="customer_id" NULLABLE="NOTNULL" OCCURS="0" OFFSET="0" PHYSICALLENGTH="4" PHYSICALOFFSET="0" PICTURETEXT="" PRECISION="10" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="varchar" DESCRIPTION="" FIELDNUMBER="2" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="NOT A KEY" LENGTH="0" LEVEL="0" NAME="first_name" NULLABLE="NOTNULL" OCCURS="0" OFFSET="4" PHYSICALLENGTH="200" PHYSICALOFFSET="4" PICTURETEXT="" PRECISION="100" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="varchar" DESCRIPTION="" FIELDNUMBER="3" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="NOT A KEY" LENGTH="0" LEVEL="0" NAME="last_name" NULLABLE="NOTNULL" OCCURS="0" OFFSET="204" PHYSICALLENGTH="200" PHYSICALOFFSET="204" PICTURETEXT="" PRECISION="100" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="varchar" DESCRIPTION="" FIELDNUMBER="4" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="NOT A KEY" LENGTH="0" LEVEL="0" NAME="email" NULLABLE="NOTNULL" OCCURS="0" OFFSET="404" PHYSICALLENGTH="510" PHYSICALOFFSET="404" PICTURETEXT="" PRECISION="255" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="timestamp" DESCRIPTION="" FIELDNUMBER="5" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="NOT A KEY" LENGTH="0" LEVEL="0" NAME="created_at" NULLABLE="NOTNULL" OCCURS="0" OFFSET="914" PHYSICALLENGTH="8" PHYSICALOFFSET="914" PICTURETEXT="" PRECISION="26" SCALE="6" USAGE_FLAGS=""/>
+    </SOURCE>
+    <SOURCE BUSINESSNAME="" DATABASETYPE="PostgreSQL" DBDNAME="SalesDB" DESCRIPTION="" NAME="orders" OBJECTVERSION="1" OWNERNAME="public" VERSIONNUMBER="1">
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="int4" DESCRIPTION="" FIELDNUMBER="1" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="PRIMARY KEY" LENGTH="0" LEVEL="0" NAME="order_id" NULLABLE="NOTNULL" OCCURS="0" OFFSET="0" PHYSICALLENGTH="4" PHYSICALOFFSET="0" PICTURETEXT="" PRECISION="10" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="int4" DESCRIPTION="" FIELDNUMBER="2" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="FOREIGN KEY" LENGTH="0" LEVEL="0" NAME="customer_id" NULLABLE="NOTNULL" OCCURS="0" OFFSET="4" PHYSICALLENGTH="4" PHYSICALOFFSET="4" PICTURETEXT="" PRECISION="10" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="numeric" DESCRIPTION="" FIELDNUMBER="3" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="NOT A KEY" LENGTH="0" LEVEL="0" NAME="total_amount" NULLABLE="NOTNULL" OCCURS="0" OFFSET="8" PHYSICALLENGTH="8" PHYSICALOFFSET="8" PICTURETEXT="" PRECISION="19" SCALE="4" USAGE_FLAGS=""/>
+    </SOURCE>
+    <TARGET BUSINESSNAME="" CONSTRAINT="" DATABASETYPE="PostgreSQL" DESCRIPTION="Customer dimension (type 1)" NAME="dim_customer" OBJECTVERSION="1" TABLEOPTIONS="" VERSIONNUMBER="1">
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="int4" DESCRIPTION="" FIELDNUMBER="1" KEYTYPE="PRIMARY KEY" NAME="customer_key" NULLABLE="NOTNULL" PICTURETEXT="" PRECISION="10" SCALE="0"/>
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="int4" DESCRIPTION="" FIELDNUMBER="2" KEYTYPE="NOT A KEY" NAME="customer_id" NULLABLE="NOTNULL" PICTURETEXT="" PRECISION="10" SCALE="0"/>
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="varchar" DESCRIPTION="" FIELDNUMBER="3" KEYTYPE="NOT A KEY" NAME="first_name" NULLABLE="NULL" PICTURETEXT="" PRECISION="100" SCALE="0"/>
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="varchar" DESCRIPTION="" FIELDNUMBER="4" KEYTYPE="NOT A KEY" NAME="last_name" NULLABLE="NULL" PICTURETEXT="" PRECISION="100" SCALE="0"/>
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="varchar" DESCRIPTION="" FIELDNUMBER="5" KEYTYPE="NOT A KEY" NAME="email" NULLABLE="NULL" PICTURETEXT="" PRECISION="255" SCALE="0"/>
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="bool" DESCRIPTION="" FIELDNUMBER="6" KEYTYPE="NOT A KEY" NAME="is_current" NULLABLE="NOTNULL" PICTURETEXT="" PRECISION="1" SCALE="0"/>
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="timestamp" DESCRIPTION="" FIELDNUMBER="7" KEYTYPE="NOT A KEY" NAME="updated_at" NULLABLE="NULL" PICTURETEXT="" PRECISION="26" SCALE="6"/>
+    </TARGET>
+    <MAPPING DESCRIPTION="Type-1 customer dimension" ISVALID="YES" NAME="m_Load_Dim_Customer" OBJECTVERSION="1" VERSIONNUMBER="1">
+        <TRANSFORMATION DESCRIPTION="" NAME="SQ_Customers" OBJECTVERSION="1" REUSABLE="NO" TYPE="Source Qualifier" VERSIONNUMBER="1">
+            <TRANSFORMFIELD DATATYPE="nstring" DEFAULTVALUE="" DESCRIPTION="" NAME="LastName" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="100" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="CustomerId" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="10" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="nstring" DEFAULTVALUE="" DESCRIPTION="" NAME="FirstName" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="100" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="nstring" DEFAULTVALUE="" DESCRIPTION="" NAME="Email" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="255" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="OrderId" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="10" SCALE="0"/>
+            <TABLEATTRIBUTE NAME="Sql Query" VALUE=""/>
+            <TABLEATTRIBUTE NAME="User Defined Join" VALUE="{customers LEFT OUTER JOIN orders ON customers.customer_id = orders.customer_id}"/>
+            <TABLEATTRIBUTE NAME="Source Filter" VALUE="customers.email IS NOT NULL AND customers.email ILIKE &apos;%@EXAMPLE.COM&apos;"/>
+            <TABLEATTRIBUTE NAME="Number Of Sorted Ports" VALUE="1"/>
+            <TABLEATTRIBUTE NAME="Tracing Level" VALUE="Normal"/>
+            <TABLEATTRIBUTE NAME="Select Distinct" VALUE="YES"/>
+            <TABLEATTRIBUTE NAME="Is Partitionable" VALUE="NO"/>
+            <TABLEATTRIBUTE NAME="Pre SQL" VALUE=""/>
+            <TABLEATTRIBUTE NAME="Post SQL" VALUE=""/>
+            <TABLEATTRIBUTE NAME="Output is deterministic" VALUE="NO"/>
+            <TABLEATTRIBUTE NAME="Output is repeatable" VALUE="Never"/>
+        </TRANSFORMATION>
+        <TRANSFORMATION DESCRIPTION="Current dimension row by natural key" NAME="LKP_Dim_Customer" OBJECTVERSION="1" REUSABLE="NO" TYPE="Lookup Procedure" VERSIONNUMBER="1">
+            <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="CustomerKey" PICTURETEXT="" PORTTYPE="LOOKUP/OUTPUT" PRECISION="10" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="CustomerId" PICTURETEXT="" PORTTYPE="LOOKUP/OUTPUT" PRECISION="10" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="nstring" DEFAULTVALUE="" DESCRIPTION="" NAME="Email" PICTURETEXT="" PORTTYPE="LOOKUP/OUTPUT" PRECISION="255" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="IN_CustomerId" PICTURETEXT="" PORTTYPE="INPUT" PRECISION="10" SCALE="0"/>
+            <TABLEATTRIBUTE NAME="Lookup Sql Override" VALUE="SELECT d.customer_key AS CustomerKey, d.customer_id AS CustomerId, TRIM(d.email) AS Email&#xD;&#xA;FROM public.dim_customer d&#xD;&#xA;WHERE d.is_current&#xD;&#xA;ORDER BY d.customer_id --"/>
+            <TABLEATTRIBUTE NAME="Lookup table name" VALUE="public.dim_customer"/>
+            <TABLEATTRIBUTE NAME="Lookup Source Filter" VALUE=""/>
+            <TABLEATTRIBUTE NAME="Lookup caching enabled" VALUE="YES"/>
+            <TABLEATTRIBUTE NAME="Lookup policy on multiple match" VALUE="Use First Value"/>
+            <TABLEATTRIBUTE NAME="Lookup condition" VALUE="CustomerId = IN_CustomerId"/>
+            <TABLEATTRIBUTE NAME="Connection Information" VALUE="$DBConnection_Tgt"/>
+            <TABLEATTRIBUTE NAME="Source Type" VALUE="Database"/>
+            <TABLEATTRIBUTE NAME="Tracing Level" VALUE="Normal"/>
+            <TABLEATTRIBUTE NAME="Lookup cache directory name" VALUE="$PMCacheDir"/>
+            <TABLEATTRIBUTE NAME="Lookup cache persistent" VALUE="NO"/>
+            <TABLEATTRIBUTE NAME="Lookup Data Cache Size" VALUE="Auto"/>
+            <TABLEATTRIBUTE NAME="Lookup Index Cache Size" VALUE="Auto"/>
+            <TABLEATTRIBUTE NAME="Dynamic Lookup Cache" VALUE="NO"/>
+            <TABLEATTRIBUTE NAME="Pre-build Lookup Cache" VALUE="Auto"/>
+        </TRANSFORMATION>
+        <TRANSFORMATION DESCRIPTION="" NAME="UPD_Insert_Update" OBJECTVERSION="1" REUSABLE="NO" TYPE="Update Strategy" VERSIONNUMBER="1">
+            <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="CustomerKey" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="10" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="CustomerId" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="10" SCALE="0"/>
+            <TABLEATTRIBUTE NAME="Update Strategy Expression" VALUE="IIF(ISNULL(CustomerKey), DD_INSERT, DD_UPDATE)"/>
+            <TABLEATTRIBUTE NAME="Forward Rejected Rows" VALUE="YES"/>
+            <TABLEATTRIBUTE NAME="Tracing Level" VALUE="Normal"/>
+        </TRANSFORMATION>
+        <INSTANCE DBDNAME="SalesDB" DESCRIPTION="" NAME="Customers" REUSABLE="NO" TRANSFORMATION_NAME="customers" TRANSFORMATION_TYPE="Source Definition" TYPE="SOURCE"/>
+        <INSTANCE DBDNAME="SalesDB" DESCRIPTION="" NAME="Orders" REUSABLE="NO" TRANSFORMATION_NAME="orders" TRANSFORMATION_TYPE="Source Definition" TYPE="SOURCE"/>
+        <INSTANCE DESCRIPTION="" NAME="SQ_Customers" REUSABLE="NO" TRANSFORMATION_NAME="SQ_Customers" TRANSFORMATION_TYPE="Source Qualifier" TYPE="TRANSFORMATION">
+            <ASSOCIATED_SOURCE_INSTANCE NAME="Customers"/>
+            <ASSOCIATED_SOURCE_INSTANCE NAME="Orders"/>
+        </INSTANCE>
+        <INSTANCE DESCRIPTION="" NAME="LKP_Dim_Customer" REUSABLE="NO" TRANSFORMATION_NAME="LKP_Dim_Customer" TRANSFORMATION_TYPE="Lookup Procedure" TYPE="TRANSFORMATION"/>
+        <INSTANCE DESCRIPTION="" NAME="UPD_Insert_Update" REUSABLE="NO" TRANSFORMATION_NAME="UPD_Insert_Update" TRANSFORMATION_TYPE="Update Strategy" TYPE="TRANSFORMATION"/>
+        <INSTANCE DESCRIPTION="" NAME="Dim_Customer" REUSABLE="NO" TRANSFORMATION_NAME="dim_customer" TRANSFORMATION_TYPE="Target Definition" TYPE="TARGET">
+            <TABLEATTRIBUTE NAME="Update Override" VALUE="UPDATE dim_customer SET email = :TU.email, last_name = :TU.last_name, updated_at = LOCALTIMESTAMP WHERE customer_key = :TU.customer_key"/>
+            <TABLEATTRIBUTE NAME="Pre SQL" VALUE=""/>
+            <TABLEATTRIBUTE NAME="Post SQL" VALUE=""/>
+        </INSTANCE>
+        <CONNECTOR FROMFIELD="last_name" FROMINSTANCE="Customers" FROMINSTANCETYPE="Source Definition" TOFIELD="LastName" TOINSTANCE="SQ_Customers" TOINSTANCETYPE="Source Qualifier"/>
+        <CONNECTOR FROMFIELD="customer_id" FROMINSTANCE="Customers" FROMINSTANCETYPE="Source Definition" TOFIELD="CustomerId" TOINSTANCE="SQ_Customers" TOINSTANCETYPE="Source Qualifier"/>
+        <CONNECTOR FROMFIELD="first_name" FROMINSTANCE="Customers" FROMINSTANCETYPE="Source Definition" TOFIELD="FirstName" TOINSTANCE="SQ_Customers" TOINSTANCETYPE="Source Qualifier"/>
+        <CONNECTOR FROMFIELD="email" FROMINSTANCE="Customers" FROMINSTANCETYPE="Source Definition" TOFIELD="Email" TOINSTANCE="SQ_Customers" TOINSTANCETYPE="Source Qualifier"/>
+        <CONNECTOR FROMFIELD="order_id" FROMINSTANCE="Orders" FROMINSTANCETYPE="Source Definition" TOFIELD="OrderId" TOINSTANCE="SQ_Customers" TOINSTANCETYPE="Source Qualifier"/>
+        <CONNECTOR FROMFIELD="CustomerId" FROMINSTANCE="SQ_Customers" FROMINSTANCETYPE="Source Qualifier" TOFIELD="IN_CustomerId" TOINSTANCE="LKP_Dim_Customer" TOINSTANCETYPE="Lookup Procedure"/>
+        <CONNECTOR FROMFIELD="CustomerKey" FROMINSTANCE="LKP_Dim_Customer" FROMINSTANCETYPE="Lookup Procedure" TOFIELD="CustomerKey" TOINSTANCE="UPD_Insert_Update" TOINSTANCETYPE="Update Strategy"/>
+        <CONNECTOR FROMFIELD="CustomerId" FROMINSTANCE="SQ_Customers" FROMINSTANCETYPE="Source Qualifier" TOFIELD="CustomerId" TOINSTANCE="UPD_Insert_Update" TOINSTANCETYPE="Update Strategy"/>
+        <CONNECTOR FROMFIELD="CustomerKey" FROMINSTANCE="UPD_Insert_Update" FROMINSTANCETYPE="Update Strategy" TOFIELD="customer_key" TOINSTANCE="Dim_Customer" TOINSTANCETYPE="Target Definition"/>
+        <CONNECTOR FROMFIELD="CustomerId" FROMINSTANCE="UPD_Insert_Update" FROMINSTANCETYPE="Update Strategy" TOFIELD="customer_id" TOINSTANCE="Dim_Customer" TOINSTANCETYPE="Target Definition"/>
+        <CONNECTOR FROMFIELD="FirstName" FROMINSTANCE="SQ_Customers" FROMINSTANCETYPE="Source Qualifier" TOFIELD="first_name" TOINSTANCE="Dim_Customer" TOINSTANCETYPE="Target Definition"/>
+        <CONNECTOR FROMFIELD="LastName" FROMINSTANCE="SQ_Customers" FROMINSTANCETYPE="Source Qualifier" TOFIELD="last_name" TOINSTANCE="Dim_Customer" TOINSTANCETYPE="Target Definition"/>
+        <CONNECTOR FROMFIELD="Email" FROMINSTANCE="SQ_Customers" FROMINSTANCETYPE="Source Qualifier" TOFIELD="email" TOINSTANCE="Dim_Customer" TOINSTANCETYPE="Target Definition"/>
+        <TARGETLOADORDER ORDER="1" TARGETINSTANCE="Dim_Customer"/>
+        <ERPINFO/>
+    </MAPPING>
+    <SESSION DESCRIPTION="" ISVALID="YES" MAPPINGNAME="m_Load_Dim_Customer" NAME="s_m_Load_Dim_Customer" REUSABLE="YES" SORTORDER="Binary" VERSIONNUMBER="1">
+        <SESSTRANSFORMATIONINST ISREPARTITIONPOINT="YES" PARTITIONTYPE="PASS THROUGH" PIPELINE="1" SINSTANCENAME="SQ_Customers" STAGE="1" TRANSFORMATIONNAME="SQ_Customers" TRANSFORMATIONTYPE="Source Qualifier">
+            <ATTRIBUTE NAME="Sql Query" VALUE=""/>
+            <ATTRIBUTE NAME="User Defined Join" VALUE=""/>
+            <ATTRIBUTE NAME="Source Filter" VALUE=""/>
+            <ATTRIBUTE NAME="Number Of Sorted Ports" VALUE="1"/>
+            <ATTRIBUTE NAME="Owner Name" VALUE="public"/>
+        </SESSTRANSFORMATIONINST>
+        <SESSTRANSFORMATIONINST ISREPARTITIONPOINT="NO" PIPELINE="1" SINSTANCENAME="LKP_Dim_Customer" STAGE="1" TRANSFORMATIONNAME="LKP_Dim_Customer" TRANSFORMATIONTYPE="Lookup Procedure">
+            <ATTRIBUTE NAME="Lookup Sql Override" VALUE=""/>
+            <ATTRIBUTE NAME="Lookup table name" VALUE=""/>
+            <ATTRIBUTE NAME="Connection Information" VALUE="$DBConnection_Tgt"/>
+        </SESSTRANSFORMATIONINST>
+        <SESSTRANSFORMATIONINST ISREPARTITIONPOINT="NO" PIPELINE="1" SINSTANCENAME="Dim_Customer" STAGE="1" TRANSFORMATIONNAME="dim_customer" TRANSFORMATIONTYPE="Target Definition">
+            <ATTRIBUTE NAME="Target load type" VALUE="Normal"/>
+            <ATTRIBUTE NAME="Insert" VALUE="YES"/>
+            <ATTRIBUTE NAME="Update as Update" VALUE="YES"/>
+            <ATTRIBUTE NAME="Update Override" VALUE=""/>
+            <ATTRIBUTE NAME="Table Name Prefix" VALUE="public"/>
+            <ATTRIBUTE NAME="Pre SQL" VALUE="-- The T-SQL batch (DECLARE @cnt … IF @cnt = 0 INSERT …) became public.etl_pre_dim_customer()&#xD;&#xA;-- converted with the sql-conversion skill: Pre SQL cannot hold variables or IF blocks (IC-10, IC-11).&#xD;&#xA;SELECT public.etl_pre_dim_customer()"/>
+            <ATTRIBUTE NAME="Post SQL" VALUE="MERGE INTO public.dim_customer AS tgt&#xD;&#xA;USING public.stg_customer AS src ON tgt.customer_id = src.customer_id&#xD;&#xA;WHEN MATCHED THEN UPDATE SET email = src.email, updated_at = LOCALTIMESTAMP&#xD;&#xA;WHEN NOT MATCHED THEN INSERT (customer_id, first_name, last_name, email, is_current)&#xD;&#xA;     VALUES (src.customer_id, src.first_name, src.last_name, src.email, TRUE)"/>
+        </SESSTRANSFORMATIONINST>
+        <CONFIGREFERENCE REFOBJECTNAME="default_session_config" TYPE="Session config"/>
+        <SESSIONEXTENSION DSQINSTNAME="SQ_Customers" DSQINSTTYPE="Source Qualifier" NAME="Relational Reader" SINSTANCENAME="SQ_Customers" SUBTYPE="Relational Reader" TRANSFORMATIONTYPE="Reader" TYPE="READER">
+            <CONNECTIONREFERENCE CNXREFNAME="DB Connection" CONNECTIONNAME="" CONNECTIONNUMBER="1" CONNECTIONSUBTYPE="PostgreSQL" CONNECTIONTYPE="Relational" VARIABLE="$DBConnection_Src"/>
+        </SESSIONEXTENSION>
+        <SESSIONEXTENSION DSQINSTNAME="SQ_Customers" DSQINSTTYPE="Source Qualifier" NAME="Relational Writer" SINSTANCENAME="Dim_Customer" SUBTYPE="Relational Writer" TRANSFORMATIONTYPE="Writer" TYPE="WRITER">
+            <CONNECTIONREFERENCE CNXREFNAME="DB Connection" CONNECTIONNAME="" CONNECTIONNUMBER="1" CONNECTIONSUBTYPE="PostgreSQL" CONNECTIONTYPE="Relational" VARIABLE="$DBConnection_Tgt"/>
+        </SESSIONEXTENSION>
+        <ATTRIBUTE NAME="Parameter Filename" VALUE="$PMSourceFileDir\etl_params.prm"/>
+        <ATTRIBUTE NAME="Commit Interval" VALUE="10000"/>
+        <ATTRIBUTE NAME="Treat source rows as" VALUE="Data Driven"/>
+    </SESSION>
+</FOLDER>
+</REPOSITORY>
+</POWERMART>

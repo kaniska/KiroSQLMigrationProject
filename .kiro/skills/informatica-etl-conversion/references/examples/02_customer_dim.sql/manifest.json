@@ -1,0 +1,119 @@
+{
+  "source_xml": "02_customer_dim.sqlserver.xml",
+  "entries": [
+    {
+      "id": 1,
+      "file": "01_SQ_Customers_User_Defined_Join.sql",
+      "kind": "user_defined_join",
+      "attribute": "User Defined Join",
+      "tag_index": 1,
+      "scope": "mapping",
+      "object": "m_Load_Dim_Customer",
+      "instance": "SQ_Customers",
+      "owner_type": "Source Qualifier",
+      "params": [],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "Customers",
+        "Orders"
+      ]
+    },
+    {
+      "id": 2,
+      "file": "02_SQ_Customers_Source_Filter.sql",
+      "kind": "source_filter",
+      "attribute": "Source Filter",
+      "tag_index": 2,
+      "scope": "mapping",
+      "object": "m_Load_Dim_Customer",
+      "instance": "SQ_Customers",
+      "owner_type": "Source Qualifier",
+      "params": [],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "Customers",
+        "Orders"
+      ]
+    },
+    {
+      "id": 3,
+      "file": "03_LKP_Dim_Customer_Lookup_Sql_Override.sql",
+      "kind": "lookup_override",
+      "attribute": "Lookup Sql Override",
+      "tag_index": 11,
+      "scope": "mapping",
+      "object": "m_Load_Dim_Customer",
+      "instance": "LKP_Dim_Customer",
+      "owner_type": "Lookup Procedure",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 4,
+      "file": "04_LKP_Dim_Customer_Lookup_table_name.sql",
+      "kind": "lookup_table",
+      "attribute": "Lookup table name",
+      "tag_index": 12,
+      "scope": "mapping",
+      "object": "m_Load_Dim_Customer",
+      "instance": "LKP_Dim_Customer",
+      "owner_type": "Lookup Procedure",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 5,
+      "file": "05_Dim_Customer_Update_Override.sql",
+      "kind": "update_override",
+      "attribute": "Update Override",
+      "tag_index": 29,
+      "scope": "mapping",
+      "object": "m_Load_Dim_Customer",
+      "instance": "Dim_Customer",
+      "owner_type": "Target Definition",
+      "params": [],
+      "ports": [],
+      "tu_refs": [
+        ":TU.CustomerKey",
+        ":TU.Email",
+        ":TU.LastName"
+      ]
+    },
+    {
+      "id": 6,
+      "file": "06_Dim_Customer_Pre_SQL.sql",
+      "kind": "pre_sql",
+      "attribute": "Pre SQL",
+      "tag_index": 45,
+      "scope": "session",
+      "object": "s_m_Load_Dim_Customer",
+      "instance": "Dim_Customer",
+      "owner_type": "Target Definition",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 7,
+      "file": "07_Dim_Customer_Post_SQL.sql",
+      "kind": "post_sql",
+      "attribute": "Post SQL",
+      "tag_index": 46,
+      "scope": "session",
+      "object": "s_m_Load_Dim_Customer",
+      "instance": "Dim_Customer",
+      "owner_type": "Target Definition",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    }
+  ],
+  "notes": [
+    "m_Load_Dim_Customer/SQ_Customers: Number Of Sorted Ports = 1 — Informatica appends ORDER BY on the first 1 port(s); PostgreSQL collation order differs from SQL Server's case-insensitive order (IC-09) → manual review",
+    "s_m_Load_Dim_Customer/SQ_Customers: Number Of Sorted Ports = 1 — Informatica appends ORDER BY on the first 1 port(s); PostgreSQL collation order differs from SQL Server's case-insensitive order (IC-09) → manual review"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "_comment": "Copy to .kiro/settings/migration-services.json and fill in the AWS resources you created (see .kiro/skills/sql-conversion/references/aws-services.md). backend: auto = use AWS when the resource answers, otherwise the local store (logged as services.fallback); aws = AWS only, fail loudly; local = never call AWS. Environment overrides: MIGRATION_OFFLINE=1, MIGRATION_<AUDIT|LINEAGE|GUARDRAIL|ARCHIVE|SECRETS>_BACKEND, MIGRATION_LOG_DIR, MIGRATION_STATE_DIR. No secrets belong in this file.",
+  "region": "us-east-1",
+  "aws_profile": null,
+  "timeout_seconds": 10,
+  "probe_cache_seconds": 300,
+  "state_dir": "logs/state",
+  "audit": {
+    "backend": "auto",
+    "cloudwatch": { "log_group": "/kiro/sql-migration/audit", "log_stream_prefix": "kiro-sql-migration", "max_batch_events": 5000 },
+    "local": { "dir": "logs/audit" }
+  },
+  "lineage": {
+    "backend": "auto",
+    "datazone": { "domain_identifier": "dzd_xxxxxxxxxxxx" },
+    "local": { "collection": "lineage" }
+  },
+  "guardrail": {
+    "backend": "auto",
+    "bedrock": { "guardrail_identifier": "xxxxxxxxxxxx", "guardrail_version": "1", "max_chars_per_call": 20000, "max_chars_per_run": 400000 },
+    "local": { "fail_on": "high" }
+  },
+  "archive": {
+    "backend": "auto",
+    "s3": { "bucket": "kiro-sql-migration-archive-123456789012", "prefix": "kiro-sql-migration/", "object_lock_mode": "GOVERNANCE",
+            "retention_days": 365, "sse": "aws:kms", "kms_key_id": "alias/kiro-sql-migration" },
+    "local": { "dir": "logs/archive" }
+  },
+  "secrets": {
+    "backend": "local",
+    "secretsmanager": { "secret_id": "kiro-sql-migration/test-db" },
+    "local": { "env": "PGPASSWORD" }
+  }
+}

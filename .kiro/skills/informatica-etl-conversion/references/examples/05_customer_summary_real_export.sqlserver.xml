@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<!DOCTYPE POWERMART SYSTEM "powrmart.dtd">
+<POWERMART CREATION_DATE="09/14/2026 10:02:41" REPOSITORY_VERSION="187.96">
+<REPOSITORY NAME="REP_SALES_DW" VERSION="187" CODEPAGE="MS1252" DATABASETYPE="Microsoft SQL Server">
+<FOLDER NAME="SALES_DW" GROUP="" OWNER="etl_admin" SHARED="NOTSHARED" DESCRIPTION="Worked example 05 – real export format (Windows-1252, CRLF, NAME =&quot;x&quot;)" PERMISSIONS="rwx---r--" UUID="7f3a0e2c-1b4d-4c8e-9a10-0d5b2f6c1e05">
+    <SOURCE BUSINESSNAME ="" DATABASETYPE ="Microsoft SQL Server" DBDNAME ="SalesDB" DESCRIPTION ="" NAME ="Orders" OBJECTVERSION ="1" OWNERNAME ="dbo" VERSIONNUMBER ="1">
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="int" DESCRIPTION ="" FIELDNUMBER ="1" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="PRIMARY KEY" LENGTH ="0" LEVEL ="0" NAME ="OrderId" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="0" PHYSICALLENGTH ="4" PHYSICALOFFSET ="0" PICTURETEXT ="" PRECISION ="10" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="int" DESCRIPTION ="" FIELDNUMBER ="2" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="FOREIGN KEY" LENGTH ="0" LEVEL ="0" NAME ="CustomerId" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="4" PHYSICALLENGTH ="4" PHYSICALOFFSET ="4" PICTURETEXT ="" PRECISION ="10" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="datetime2" DESCRIPTION ="" FIELDNUMBER ="3" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="CreatedAt" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="8" PHYSICALLENGTH ="27" PHYSICALOFFSET ="8" PICTURETEXT ="" PRECISION ="27" SCALE ="7" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="money" DESCRIPTION ="" FIELDNUMBER ="4" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="TotalAmount" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="35" PHYSICALLENGTH ="8" PHYSICALOFFSET ="35" PICTURETEXT ="" PRECISION ="19" SCALE ="4" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="nvarchar" DESCRIPTION ="" FIELDNUMBER ="5" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="Status" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="43" PHYSICALLENGTH ="50" PHYSICALOFFSET ="43" PICTURETEXT ="" PRECISION ="50" SCALE ="0" USAGE_FLAGS =""/>
+    </SOURCE>
+    <SOURCE BUSINESSNAME ="" DATABASETYPE ="Microsoft SQL Server" DBDNAME ="SalesDB" DESCRIPTION ="" NAME ="Customers" OBJECTVERSION ="1" OWNERNAME ="dbo" VERSIONNUMBER ="1">
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="int" DESCRIPTION ="" FIELDNUMBER ="1" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="PRIMARY KEY" LENGTH ="0" LEVEL ="0" NAME ="CustomerId" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="0" PHYSICALLENGTH ="4" PHYSICALOFFSET ="0" PICTURETEXT ="" PRECISION ="10" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="nvarchar" DESCRIPTION ="" FIELDNUMBER ="2" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="FirstName" NULLABLE ="NOTNULL" OCCURS ="0" OFFSET ="4" PHYSICALLENGTH ="100" PHYSICALOFFSET ="4" PICTURETEXT ="" PRECISION ="100" SCALE ="0" USAGE_FLAGS =""/>
+        <SOURCEFIELD BUSINESSNAME ="" DATATYPE ="nvarchar" DESCRIPTION ="" FIELDNUMBER ="3" FIELDPROPERTY ="0" FIELDTYPE ="ELEMITEM" HIDDEN ="NO" KEYTYPE ="NOT A KEY" LENGTH ="0" LEVEL ="0" NAME ="LastName" NULLABLE ="NULL" OCCURS ="0" OFFSET ="104" PHYSICALLENGTH ="100" PHYSICALOFFSET ="104" PICTURETEXT ="" PRECISION ="100" SCALE ="0" USAGE_FLAGS =""/>
+    </SOURCE>
+    <TARGET BUSINESSNAME ="" CONSTRAINT ="" DATABASETYPE ="Microsoft SQL Server" DESCRIPTION ="" NAME ="Stg_Customer_Summary" OBJECTVERSION ="1" TABLEOPTIONS ="" VERSIONNUMBER ="1">
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="int" DESCRIPTION ="" FIELDNUMBER ="1" KEYTYPE ="PRIMARY KEY" NAME ="CustomerId" NULLABLE ="NOTNULL" PICTURETEXT ="" PRECISION ="10" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="nvarchar" DESCRIPTION ="" FIELDNUMBER ="2" KEYTYPE ="NOT A KEY" NAME ="CustomerName" NULLABLE ="NULL" PICTURETEXT ="" PRECISION ="201" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="int" DESCRIPTION ="" FIELDNUMBER ="3" KEYTYPE ="NOT A KEY" NAME ="OrderCount" NULLABLE ="NULL" PICTURETEXT ="" PRECISION ="10" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="money" DESCRIPTION ="" FIELDNUMBER ="4" KEYTYPE ="NOT A KEY" NAME ="LifetimeAmount" NULLABLE ="NULL" PICTURETEXT ="" PRECISION ="19" SCALE ="4"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="money" DESCRIPTION ="" FIELDNUMBER ="5" KEYTYPE ="NOT A KEY" NAME ="LastOrderAmount" NULLABLE ="NULL" PICTURETEXT ="" PRECISION ="19" SCALE ="4"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="int" DESCRIPTION ="" FIELDNUMBER ="6" KEYTYPE ="NOT A KEY" NAME ="DaysSinceLastOrder" NULLABLE ="NULL" PICTURETEXT ="" PRECISION ="10" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="nvarchar" DESCRIPTION ="" FIELDNUMBER ="7" KEYTYPE ="NOT A KEY" NAME ="PurchasedSkus" NULLABLE ="NULL" PICTURETEXT ="" PRECISION ="4000" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="varchar" DESCRIPTION ="" FIELDNUMBER ="8" KEYTYPE ="NOT A KEY" NAME ="SegmentCode" NULLABLE ="NULL" PICTURETEXT ="" PRECISION ="10" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="int" DESCRIPTION ="" FIELDNUMBER ="9" KEYTYPE ="NOT A KEY" NAME ="LoadId" NULLABLE ="NOTNULL" PICTURETEXT ="" PRECISION ="10" SCALE ="0"/>
+        <TARGETFIELD BUSINESSNAME ="" DATATYPE ="datetime2" DESCRIPTION ="" FIELDNUMBER ="10" KEYTYPE ="NOT A KEY" NAME ="UpdatedAt" NULLABLE ="NULL" PICTURETEXT ="" PRECISION ="27" SCALE ="7"/>
+    </TARGET>
+    <MAPPING DESCRIPTION ="Customer order summary – full SQL Server job in the Source Qualifier, lookup, update override and session Pre/Post SQL" ISVALID ="YES" NAME ="m_Load_Customer_Summary" OBJECTVERSION ="1" VERSIONNUMBER ="1">
+        <TRANSFORMATION DESCRIPTION ="" NAME ="SQ_Orders" OBJECTVERSION ="1" REUSABLE ="NO" TYPE ="Source Qualifier" VERSIONNUMBER ="1">
+            <TRANSFORMFIELD DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="CustomerId" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="10" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="nstring" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="CustomerName" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="201" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="OrderCount" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="10" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="LifetimeAmount" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="19" SCALE ="4"/>
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="LastOrderAmount" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="19" SCALE ="4"/>
+            <TRANSFORMFIELD DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="DaysSinceLastOrder" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="10" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="nstring" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="PurchasedSkus" PICTURETEXT ="" PORTTYPE ="INPUT/OUTPUT" PRECISION ="4000" SCALE ="0"/>
+            <TABLEATTRIBUTE NAME ="Sql Query" VALUE ="-- Kundenübersicht / résumé client: one row per customer with orders up to $$AS_OF_DATE&#xD;&#xA;WITH ranked AS (&#xD;&#xA;    SELECT o.CustomerId, o.OrderId, o.CreatedAt, o.TotalAmount,&#xD;&#xA;           ROW_NUMBER() OVER (PARTITION BY o.CustomerId ORDER BY o.CreatedAt DESC, o.OrderId DESC) AS rn&#xD;&#xA;    FROM dbo.Orders o WITH (NOLOCK)&#xD;&#xA;    WHERE o.[Status] &lt;&gt; N&apos;Cancelled&apos;&#xD;&#xA;      AND o.CreatedAt &lt; DATEADD(DAY, 1, CONVERT(DATE, &apos;$$AS_OF_DATE&apos;, 112))&#xD;&#xA;), totals AS (&#xD;&#xA;    SELECT r.CustomerId,&#xD;&#xA;           COUNT(*) AS OrderCount,&#xD;&#xA;           CAST(SUM(r.TotalAmount) AS DECIMAL(19,4)) AS LifetimeAmount,&#xD;&#xA;           MAX(CASE WHEN r.rn = 1 THEN r.TotalAmount END) AS LastOrderAmount,&#xD;&#xA;           MAX(r.CreatedAt) AS LastOrderAt&#xD;&#xA;    FROM ranked r&#xD;&#xA;    GROUP BY r.CustomerId&#xD;&#xA;)&#xD;&#xA;SELECT c.CustomerId,&#xD;&#xA;       LTRIM(RTRIM(c.FirstName)) + N&apos; &apos; + ISNULL(c.LastName, N&apos;&apos;) AS CustomerName,&#xD;&#xA;       t.OrderCount,&#xD;&#xA;       t.LifetimeAmount,&#xD;&#xA;       t.LastOrderAmount,&#xD;&#xA;       DATEDIFF(DAY, t.LastOrderAt, CONVERT(DATE, &apos;$$AS_OF_DATE&apos;, 112)) AS DaysSinceLastOrder,&#xD;&#xA;       ISNULL(sk.Skus, &apos;&apos;) AS PurchasedSkus&#xD;&#xA;FROM totals t&#xD;&#xA;JOIN dbo.Customers c WITH (NOLOCK) ON c.CustomerId = t.CustomerId&#xD;&#xA;OUTER APPLY (&#xD;&#xA;    SELECT STRING_AGG(d.SKU, &apos;,&apos;) WITHIN GROUP (ORDER BY d.SKU) AS Skus&#xD;&#xA;    FROM (SELECT DISTINCT p.SKU&#xD;&#xA;          FROM dbo.OrderLines ol WITH (NOLOCK)&#xD;&#xA;          JOIN dbo.Orders o2 WITH (NOLOCK) ON o2.OrderId = ol.OrderId&#xD;&#xA;          JOIN dbo.Products p WITH (NOLOCK) ON p.ProductId = ol.ProductId&#xD;&#xA;          WHERE o2.CustomerId = c.CustomerId&#xD;&#xA;            AND o2.[Status] &lt;&gt; N&apos;Cancelled&apos;&#xD;&#xA;            AND o2.CreatedAt &lt; DATEADD(DAY, 1, CONVERT(DATE, &apos;$$AS_OF_DATE&apos;, 112))) d&#xD;&#xA;) sk&#xD;&#xA;ORDER BY c.CustomerId"/>
+            <TABLEATTRIBUTE NAME ="User Defined Join" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Source Filter" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Number Of Sorted Ports" VALUE ="0"/>
+            <TABLEATTRIBUTE NAME ="Tracing Level" VALUE ="Normal"/>
+            <TABLEATTRIBUTE NAME ="Select Distinct" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Is Partitionable" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Pre SQL" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Post SQL" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Output is deterministic" VALUE ="NO"/>
+            <TABLEATTRIBUTE NAME ="Output is repeatable" VALUE ="Never"/>
+        </TRANSFORMATION>
+        <TRANSFORMATION DESCRIPTION ="" NAME ="LKP_Customer_Segment" OBJECTVERSION ="1" REUSABLE ="NO" TYPE ="Lookup Procedure" VERSIONNUMBER ="1">
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="SegmentCode" PICTURETEXT ="" PORTTYPE ="LOOKUP/OUTPUT" PRECISION ="10" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="MinLifetimeAmount" PICTURETEXT ="" PORTTYPE ="LOOKUP/OUTPUT" PRECISION ="19" SCALE ="4"/>
+            <TRANSFORMFIELD DATATYPE ="decimal" DEFAULTVALUE ="" DESCRIPTION ="" NAME ="IN_LifetimeAmount" PICTURETEXT ="" PORTTYPE ="INPUT" PRECISION ="19" SCALE ="4"/>
+            <TABLEATTRIBUTE NAME ="Lookup Sql Override" VALUE ="SELECT s.SegmentCode AS SegmentCode, s.MinLifetimeAmount AS MinLifetimeAmount FROM dbo.CustomerSegments s WITH (NOLOCK) WHERE s.IsActive = 1 ORDER BY s.MinLifetimeAmount --"/>
+            <TABLEATTRIBUTE NAME ="Lookup table name" VALUE ="CustomerSegments"/>
+            <TABLEATTRIBUTE NAME ="Lookup Source Filter" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Lookup caching enabled" VALUE ="YES"/>
+            <TABLEATTRIBUTE NAME ="Lookup policy on multiple match" VALUE ="Use Last Value"/>
+            <TABLEATTRIBUTE NAME ="Lookup condition" VALUE ="MinLifetimeAmount &lt;= IN_LifetimeAmount"/>
+            <TABLEATTRIBUTE NAME ="Connection Information" VALUE ="$Target"/>
+            <TABLEATTRIBUTE NAME ="Source Type" VALUE ="Database"/>
+            <TABLEATTRIBUTE NAME ="Tracing Level" VALUE ="Normal"/>
+            <TABLEATTRIBUTE NAME ="Lookup cache directory name" VALUE ="$PMCacheDir&#x5c;"/>
+        </TRANSFORMATION>
+        <TRANSFORMATION DESCRIPTION ="" NAME ="EXP_Load_Metadata" OBJECTVERSION ="1" REUSABLE ="NO" TYPE ="Expression" VERSIONNUMBER ="1">
+            <TRANSFORMFIELD DATATYPE ="integer" DEFAULTVALUE ="" DESCRIPTION ="" EXPRESSION ="TO_INTEGER($$LOAD_ID)" EXPRESSIONTYPE ="GENERAL" NAME ="LoadId" PICTURETEXT ="" PORTTYPE ="OUTPUT" PRECISION ="10" SCALE ="0"/>
+            <TRANSFORMFIELD DATATYPE ="string" DEFAULTVALUE ="" DESCRIPTION ="" EXPRESSION ="IIF(ISNULL(SegmentCode), &apos;NONE&apos;, SegmentCode)" EXPRESSIONTYPE ="GENERAL" NAME ="o_SegmentCode" PICTURETEXT ="" PORTTYPE ="OUTPUT" PRECISION ="10" SCALE ="0"/>
+            <TABLEATTRIBUTE NAME ="Tracing Level" VALUE ="Normal"/>
+        </TRANSFORMATION>
+        <INSTANCE DBDNAME ="SalesDB" DESCRIPTION ="" NAME ="Orders" REUSABLE ="NO" TRANSFORMATION_NAME ="Orders" TRANSFORMATION_TYPE ="Source Definition" TYPE ="SOURCE"/>
+        <INSTANCE DBDNAME ="SalesDB" DESCRIPTION ="" NAME ="Customers" REUSABLE ="NO" TRANSFORMATION_NAME ="Customers" TRANSFORMATION_TYPE ="Source Definition" TYPE ="SOURCE"/>
+        <INSTANCE DESCRIPTION ="" NAME ="SQ_Orders" REUSABLE ="NO" TRANSFORMATION_NAME ="SQ_Orders" TRANSFORMATION_TYPE ="Source Qualifier" TYPE ="TRANSFORMATION">
+            <ASSOCIATED_SOURCE_INSTANCE NAME ="Orders"/>
+            <ASSOCIATED_SOURCE_INSTANCE NAME ="Customers"/>
+        </INSTANCE>
+        <INSTANCE DESCRIPTION ="" NAME ="LKP_Customer_Segment" REUSABLE ="NO" TRANSFORMATION_NAME ="LKP_Customer_Segment" TRANSFORMATION_TYPE ="Lookup Procedure" TYPE ="TRANSFORMATION"/>
+        <INSTANCE DESCRIPTION ="" NAME ="EXP_Load_Metadata" REUSABLE ="NO" TRANSFORMATION_NAME ="EXP_Load_Metadata" TRANSFORMATION_TYPE ="Expression" TYPE ="TRANSFORMATION"/>
+        <INSTANCE DESCRIPTION ="" NAME ="Stg_Customer_Summary" REUSABLE ="NO" TRANSFORMATION_NAME ="Stg_Customer_Summary" TRANSFORMATION_TYPE ="Target Definition" TYPE ="TARGET">
+            <TABLEATTRIBUTE NAME ="Update Override" VALUE ="UPDATE dbo.Stg_Customer_Summary SET OrderCount = :TU.OrderCount, LifetimeAmount = :TU.LifetimeAmount, SegmentCode = :TU.SegmentCode, UpdatedAt = SYSDATETIME() WHERE CustomerId = :TU.CustomerId"/>
+            <TABLEATTRIBUTE NAME ="Pre SQL" VALUE =""/>
+            <TABLEATTRIBUTE NAME ="Post SQL" VALUE =""/>
+        </INSTANCE>
+        <CONNECTOR FROMFIELD ="CustomerId" FROMINSTANCE ="Orders" FROMINSTANCETYPE ="Source Definition" TOFIELD ="CustomerId" TOINSTANCE ="SQ_Orders" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="CreatedAt" FROMINSTANCE ="Orders" FROMINSTANCETYPE ="Source Definition" TOFIELD ="OrderCount" TOINSTANCE ="SQ_Orders" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="TotalAmount" FROMINSTANCE ="Orders" FROMINSTANCETYPE ="Source Definition" TOFIELD ="LifetimeAmount" TOINSTANCE ="SQ_Orders" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="FirstName" FROMINSTANCE ="Customers" FROMINSTANCETYPE ="Source Definition" TOFIELD ="CustomerName" TOINSTANCE ="SQ_Orders" TOINSTANCETYPE ="Source Qualifier"/>
+        <CONNECTOR FROMFIELD ="LifetimeAmount" FROMINSTANCE ="SQ_Orders" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="IN_LifetimeAmount" TOINSTANCE ="LKP_Customer_Segment" TOINSTANCETYPE ="Lookup Procedure"/>
+        <CONNECTOR FROMFIELD ="CustomerId" FROMINSTANCE ="SQ_Orders" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="CustomerId" TOINSTANCE ="Stg_Customer_Summary" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="CustomerName" FROMINSTANCE ="SQ_Orders" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="CustomerName" TOINSTANCE ="Stg_Customer_Summary" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="OrderCount" FROMINSTANCE ="SQ_Orders" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="OrderCount" TOINSTANCE ="Stg_Customer_Summary" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="LifetimeAmount" FROMINSTANCE ="SQ_Orders" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="LifetimeAmount" TOINSTANCE ="Stg_Customer_Summary" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="LastOrderAmount" FROMINSTANCE ="SQ_Orders" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="LastOrderAmount" TOINSTANCE ="Stg_Customer_Summary" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="DaysSinceLastOrder" FROMINSTANCE ="SQ_Orders" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="DaysSinceLastOrder" TOINSTANCE ="Stg_Customer_Summary" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="PurchasedSkus" FROMINSTANCE ="SQ_Orders" FROMINSTANCETYPE ="Source Qualifier" TOFIELD ="PurchasedSkus" TOINSTANCE ="Stg_Customer_Summary" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="o_SegmentCode" FROMINSTANCE ="EXP_Load_Metadata" FROMINSTANCETYPE ="Expression" TOFIELD ="SegmentCode" TOINSTANCE ="Stg_Customer_Summary" TOINSTANCETYPE ="Target Definition"/>
+        <CONNECTOR FROMFIELD ="LoadId" FROMINSTANCE ="EXP_Load_Metadata" FROMINSTANCETYPE ="Expression" TOFIELD ="LoadId" TOINSTANCE ="Stg_Customer_Summary" TOINSTANCETYPE ="Target Definition"/>
+        <TARGETLOADORDER ORDER ="1" TARGETINSTANCE ="Stg_Customer_Summary"/>
+        <MAPPINGVARIABLE DATATYPE ="string" DEFAULTVALUE ="20000101" DESCRIPTION ="yyyymmdd" ISEXPRESSIONVARIABLE ="NO" ISPARAM ="YES" NAME ="$$AS_OF_DATE" PRECISION ="8" SCALE ="0" USERDEFINED ="YES"/>
+        <MAPPINGVARIABLE DATATYPE ="integer" DEFAULTVALUE ="0" DESCRIPTION ="" ISEXPRESSIONVARIABLE ="NO" ISPARAM ="YES" NAME ="$$LOAD_ID" PRECISION ="10" SCALE ="0" USERDEFINED ="YES"/>
+        <ERPINFO/>
+    </MAPPING>
+    <CONFIG DESCRIPTION ="Default session configuration object" ISDEFAULT ="YES" NAME ="default_session_config" VERSIONNUMBER ="1">
+        <ATTRIBUTE NAME ="Stop on errors" VALUE ="0"/>
+        <ATTRIBUTE NAME ="On Pre-Post SQL error" VALUE ="Stop session"/>
+        <ATTRIBUTE NAME ="Enable high precision" VALUE ="YES"/>
+    </CONFIG>
+    <SESSION DESCRIPTION ="" ISVALID ="YES" MAPPINGNAME ="m_Load_Customer_Summary" NAME ="s_m_Load_Customer_Summary" REUSABLE ="NO" SORTORDER ="Binary" VERSIONNUMBER ="1">
+        <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="YES" PARTITIONTYPE ="PASS THROUGH" PIPELINE ="1" SINSTANCENAME ="SQ_Orders" STAGE ="1" TRANSFORMATIONNAME ="SQ_Orders" TRANSFORMATIONTYPE ="Source Qualifier">
+            <ATTRIBUTE NAME ="Sql Query" VALUE =""/>
+            <ATTRIBUTE NAME ="Source Filter" VALUE =""/>
+            <ATTRIBUTE NAME ="Owner Name" VALUE ="dbo"/>
+        </SESSTRANSFORMATIONINST>
+        <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="NO" PIPELINE ="1" SINSTANCENAME ="LKP_Customer_Segment" STAGE ="1" TRANSFORMATIONNAME ="LKP_Customer_Segment" TRANSFORMATIONTYPE ="Lookup Procedure">
+            <ATTRIBUTE NAME ="Lookup Sql Override" VALUE =""/>
+            <ATTRIBUTE NAME ="Connection Information" VALUE ="Relational:CONN_SALESDW_TGT"/>
+        </SESSTRANSFORMATIONINST>
+        <SESSTRANSFORMATIONINST ISREPARTITIONPOINT ="NO" PIPELINE ="1" SINSTANCENAME ="Stg_Customer_Summary" STAGE ="1" TRANSFORMATIONNAME ="Stg_Customer_Summary" TRANSFORMATIONTYPE ="Target Definition">
+            <ATTRIBUTE NAME ="Table Name Prefix" VALUE ="dbo"/>
+            <ATTRIBUTE NAME ="Pre SQL" VALUE ="SET NOCOUNT ON;&#xD;&#xA;IF OBJECT_ID(N&apos;dbo.Stg_Customer_Summary&apos;, N&apos;U&apos;) IS NOT NULL TRUNCATE TABLE dbo.Stg_Customer_Summary;&#xD;&#xA;EXEC dbo.usp_EtlRunStart @JobName = N&apos;wf_Load_Customer_Summary&apos;, @LoadId = $$LOAD_ID"/>
+            <ATTRIBUTE NAME ="Post SQL" VALUE ="UPDATE STATISTICS dbo.Stg_Customer_Summary WITH FULLSCAN;&#xD;&#xA;UPDATE dbo.EtlRunLog SET EndedAt = GETDATE(), RowsLoaded = (SELECT COUNT(*) FROM dbo.Stg_Customer_Summary), Note = N&apos;loaded&#x5c;; see summary&apos; WHERE LoadId = $$LOAD_ID AND EndedAt IS NULL"/>
+            <ATTRIBUTE NAME ="Update Override" VALUE =""/>
+        </SESSTRANSFORMATIONINST>
+        <CONFIGREFERENCE REFOBJECTNAME ="default_session_config" TYPE ="Session config"/>
+        <SESSIONEXTENSION DSQINSTNAME ="SQ_Orders" DSQINSTTYPE ="Source Qualifier" NAME ="Relational Reader" SINSTANCENAME ="SQ_Orders" SUBTYPE ="Relational Reader" TRANSFORMATIONTYPE ="Reader" TYPE ="READER">
+            <CONNECTIONREFERENCE CNXREFNAME ="DB Connection" CONNECTIONNAME ="CONN_SALESDB_SRC" CONNECTIONNUMBER ="1" CONNECTIONSUBTYPE ="Microsoft SQL Server" CONNECTIONTYPE ="Relational" VARIABLE =""/>
+        </SESSIONEXTENSION>
+        <SESSIONEXTENSION DSQINSTNAME ="SQ_Orders" DSQINSTTYPE ="Source Qualifier" NAME ="Relational Writer" SINSTANCENAME ="Stg_Customer_Summary" SUBTYPE ="Relational Writer" TRANSFORMATIONTYPE ="Target Definition" TYPE ="WRITER">
+            <CONNECTIONREFERENCE CNXREFNAME ="DB Connection" CONNECTIONNAME ="CONN_SALESDW_TGT" CONNECTIONNUMBER ="1" CONNECTIONSUBTYPE ="Microsoft SQL Server" CONNECTIONTYPE ="Relational" VARIABLE =""/>
+            <ATTRIBUTE NAME ="Target load type" VALUE ="Bulk"/>
+            <ATTRIBUTE NAME ="Insert" VALUE ="YES"/>
+            <ATTRIBUTE NAME ="Update as Update" VALUE ="YES"/>
+            <ATTRIBUTE NAME ="Truncate target table option" VALUE ="NO"/>
+            <ATTRIBUTE NAME ="Reject filename" VALUE ="stg_customer_summary1.bad"/>
+        </SESSIONEXTENSION>
+        <ATTRIBUTE NAME ="General Options" VALUE =""/>
+        <ATTRIBUTE NAME ="Treat source rows as" VALUE ="Data driven"/>
+        <ATTRIBUTE NAME ="Parameter Filename" VALUE ="$PMSourceFileDir&#x5c;etl_params.prm"/>
+    </SESSION>
+    <WORKFLOW DESCRIPTION ="" ISENABLED ="YES" ISRUNNABLEASSERVICE ="NO" ISSERVICE ="NO" ISVALID ="YES" NAME ="wf_Load_Customer_Summary" REUSABLE_SCHEDULER ="NO" SCHEDULERNAME ="Scheduler" SERVERNAME ="IS_SALES" SERVER_DOMAINNAME ="Domain_SALES" SUSPEND_ON_ERROR ="NO" TASKS_MUST_RUN_ON_SERVER ="NO" VERSIONNUMBER ="1">
+        <SCHEDULER DESCRIPTION ="" NAME ="Scheduler" REUSABLE ="NO" VERSIONNUMBER ="1">
+            <SCHEDULEINFO SCHEDULETYPE ="ONDEMAND"/>
+        </SCHEDULER>
+        <TASK DESCRIPTION ="" NAME ="Start" REUSABLE ="NO" TYPE ="Start" VERSIONNUMBER ="1"/>
+        <TASKINSTANCE DESCRIPTION ="" ISENABLED ="YES" NAME ="Start" REUSABLE ="NO" TASKNAME ="Start" TASKTYPE ="Start"/>
+        <TASKINSTANCE DESCRIPTION ="" FAIL_PARENT_IF_INSTANCE_DID_NOT_RUN ="NO" FAIL_PARENT_IF_INSTANCE_FAILS ="YES" ISENABLED ="YES" NAME ="s_m_Load_Customer_Summary" REUSABLE ="NO" TASKNAME ="s_m_Load_Customer_Summary" TASKTYPE ="Session" TREAT_INPUTLINK_AS_AND ="YES"/>
+        <WORKFLOWLINK CONDITION ="" FROMTASK ="Start" TOTASK ="s_m_Load_Customer_Summary"/>
+        <WORKFLOWVARIABLE DATATYPE ="date/time" DEFAULTVALUE ="" DESCRIPTION ="The time this task started" ISNULL ="NO" ISPERSISTENT ="NO" NAME ="$Start.StartTime" USERDEFINED ="NO"/>
+        <ATTRIBUTE NAME ="Parameter Filename" VALUE ="$PMRootDir&#x5c;params&#x5c;wf_Load_Customer_Summary.prm"/>
+        <ATTRIBUTE NAME ="Write Backward Compatible Workflow Log File" VALUE ="NO"/>
+    </WORKFLOW>
+</FOLDER>
+</REPOSITORY>
+</POWERMART>

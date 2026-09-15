@@ -1,0 +1,83 @@
+{
+  "source_xml": "03_shipping_procs.sqlserver.xml",
+  "entries": [
+    {
+      "id": 1,
+      "file": "01_SQ_Orders_Source_Filter.sql",
+      "kind": "source_filter",
+      "attribute": "Source Filter",
+      "tag_index": 2,
+      "scope": "mapping",
+      "object": "m_Load_Fact_Shipping",
+      "instance": "SQ_Orders",
+      "owner_type": "Source Qualifier",
+      "params": [],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "Orders"
+      ]
+    },
+    {
+      "id": 2,
+      "file": "02_SP_ArchiveOldOrders_Stored_Procedure_Name.sql",
+      "kind": "stored_procedure",
+      "attribute": "Stored Procedure Name",
+      "tag_index": 8,
+      "scope": "mapping",
+      "object": "m_Load_Fact_Shipping",
+      "instance": "SP_ArchiveOldOrders",
+      "owner_type": "Stored Procedure",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 3,
+      "file": "03_SP_ArchiveOldOrders_Call_Text.sql",
+      "kind": "call_text",
+      "attribute": "Call Text",
+      "tag_index": 10,
+      "scope": "mapping",
+      "object": "m_Load_Fact_Shipping",
+      "instance": "SP_ArchiveOldOrders",
+      "owner_type": "Stored Procedure",
+      "params": [
+        "$$ARCHIVE_DAYS"
+      ],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 4,
+      "file": "04_SP_CalculateShipping_Stored_Procedure_Name.sql",
+      "kind": "stored_procedure",
+      "attribute": "Stored Procedure Name",
+      "tag_index": 14,
+      "scope": "mapping",
+      "object": "m_Load_Fact_Shipping",
+      "instance": "SP_CalculateShipping",
+      "owner_type": "Stored Procedure",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 5,
+      "file": "05_SQL_LastOrder_Sql_Query.sql",
+      "kind": "sql_transformation",
+      "attribute": "Sql Query",
+      "tag_index": 20,
+      "scope": "mapping",
+      "object": "m_Load_Fact_Shipping",
+      "instance": "SQL_LastOrder",
+      "owner_type": "SQL",
+      "params": [],
+      "ports": [
+        "?CustomerId?"
+      ],
+      "tu_refs": []
+    }
+  ],
+  "notes": []
+}

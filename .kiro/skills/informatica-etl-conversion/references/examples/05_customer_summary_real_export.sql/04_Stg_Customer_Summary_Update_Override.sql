@@ -1,0 +1,1 @@
+UPDATE public.stg_customer_summary SET order_count = :TU.order_count, lifetime_amount = :TU.lifetime_amount, segment_code = :TU.segment_code, updated_at = LOCALTIMESTAMP WHERE customer_id = :TU.customer_id

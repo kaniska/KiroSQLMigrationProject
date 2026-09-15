@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE POWERMART SYSTEM "powrmart.dtd">
+<!-- Worked example 04: session-level overrides and temp tables.
+     Corner cases: a REUSABLE lookup defined at folder level (converted once), a mapping-level
+     Sql Query AND a different session-level Sql Query (the session one wins; both must be
+     converted), a Pre SQL that creates a #temp table used by the override (same-connection
+     assumption), [bracketed] identifiers, &amp; inside a string literal, DATEFROMPARTS /
+     YEAR / MONTH, HAVING with a $$ parameter, INSERT … WITH (TABLOCK) + OPTION (MAXDOP 1)
+     in Post SQL, a DBCC statement with no PostgreSQL equivalent (dropped with a TODO),
+     IF OBJECT_ID(…) DROP TABLE, and a $$REGION parameter with a space in its value. -->
+<POWERMART CREATION_DATE="09/12/2026 14:11:27" REPOSITORY_VERSION="188.97">
+<REPOSITORY NAME="REP_SALES_DW" VERSION="188" CODEPAGE="UTF-8" DATABASETYPE="Microsoft SQL Server">
+<FOLDER NAME="SALES_DW" GROUP="" OWNER="etl_admin" SHARED="NOTSHARED" DESCRIPTION="" PERMISSIONS="rwx---r--" UUID="7f3a0e2c-1b4d-4c8e-9a10-0d5b2f6c1e01">
+    <SOURCE BUSINESSNAME="" DATABASETYPE="Microsoft SQL Server" DBDNAME="SalesDB" DESCRIPTION="" NAME="OrderLines" OBJECTVERSION="1" OWNERNAME="dbo" VERSIONNUMBER="1">
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="int" DESCRIPTION="" FIELDNUMBER="1" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="PRIMARY KEY" LENGTH="0" LEVEL="0" NAME="LineId" NULLABLE="NOTNULL" OCCURS="0" OFFSET="0" PHYSICALLENGTH="4" PHYSICALOFFSET="0" PICTURETEXT="" PRECISION="10" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="int" DESCRIPTION="" FIELDNUMBER="2" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="FOREIGN KEY" LENGTH="0" LEVEL="0" NAME="OrderId" NULLABLE="NOTNULL" OCCURS="0" OFFSET="4" PHYSICALLENGTH="4" PHYSICALOFFSET="4" PICTURETEXT="" PRECISION="10" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="int" DESCRIPTION="" FIELDNUMBER="3" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="FOREIGN KEY" LENGTH="0" LEVEL="0" NAME="ProductId" NULLABLE="NOTNULL" OCCURS="0" OFFSET="8" PHYSICALLENGTH="4" PHYSICALOFFSET="8" PICTURETEXT="" PRECISION="10" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="smallint" DESCRIPTION="" FIELDNUMBER="4" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="NOT A KEY" LENGTH="0" LEVEL="0" NAME="Quantity" NULLABLE="NOTNULL" OCCURS="0" OFFSET="12" PHYSICALLENGTH="2" PHYSICALOFFSET="12" PICTURETEXT="" PRECISION="5" SCALE="0" USAGE_FLAGS=""/>
+        <SOURCEFIELD BUSINESSNAME="" DATATYPE="money" DESCRIPTION="" FIELDNUMBER="5" FIELDPROPERTY="0" FIELDTYPE="ELEMITEM" HIDDEN="NO" KEYTYPE="NOT A KEY" LENGTH="0" LEVEL="0" NAME="UnitPrice" NULLABLE="NOTNULL" OCCURS="0" OFFSET="14" PHYSICALLENGTH="8" PHYSICALOFFSET="14" PICTURETEXT="" PRECISION="19" SCALE="4" USAGE_FLAGS=""/>
+    </SOURCE>
+    <TARGET BUSINESSNAME="" CONSTRAINT="" DATABASETYPE="Microsoft SQL Server" DESCRIPTION="" NAME="Fact_Product_Sales" OBJECTVERSION="1" TABLEOPTIONS="" VERSIONNUMBER="1">
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="int" DESCRIPTION="" FIELDNUMBER="1" KEYTYPE="PRIMARY KEY" NAME="ProductId" NULLABLE="NOTNULL" PICTURETEXT="" PRECISION="10" SCALE="0"/>
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="datetime" DESCRIPTION="" FIELDNUMBER="2" KEYTYPE="PRIMARY KEY" NAME="PeriodStart" NULLABLE="NOTNULL" PICTURETEXT="" PRECISION="23" SCALE="3"/>
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="int" DESCRIPTION="" FIELDNUMBER="3" KEYTYPE="NOT A KEY" NAME="UnitsSold" NULLABLE="NULL" PICTURETEXT="" PRECISION="10" SCALE="0"/>
+        <TARGETFIELD BUSINESSNAME="" DATATYPE="money" DESCRIPTION="" FIELDNUMBER="4" KEYTYPE="NOT A KEY" NAME="Revenue" NULLABLE="NULL" PICTURETEXT="" PRECISION="19" SCALE="4"/>
+    </TARGET>
+    <TRANSFORMATION DESCRIPTION="Shared product lookup (reusable)" NAME="LKP_Product" OBJECTVERSION="1" REUSABLE="YES" TYPE="Lookup Procedure" VERSIONNUMBER="1">
+        <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="ProductId" PICTURETEXT="" PORTTYPE="LOOKUP/OUTPUT" PRECISION="10" SCALE="0"/>
+        <TRANSFORMFIELD DATATYPE="string" DEFAULTVALUE="" DESCRIPTION="" NAME="SKU" PICTURETEXT="" PORTTYPE="LOOKUP/OUTPUT" PRECISION="50" SCALE="0"/>
+        <TRANSFORMFIELD DATATYPE="nstring" DEFAULTVALUE="" DESCRIPTION="" NAME="ProductName" PICTURETEXT="" PORTTYPE="LOOKUP/OUTPUT" PRECISION="200" SCALE="0"/>
+        <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="IN_ProductId" PICTURETEXT="" PORTTYPE="INPUT" PRECISION="10" SCALE="0"/>
+        <TABLEATTRIBUTE NAME="Lookup Sql Override" VALUE="SELECT p.ProductId AS ProductId, p.SKU AS SKU, p.ProductName AS ProductName FROM [dbo].[Products] p WITH (NOLOCK) WHERE p.IsActive = 1 ORDER BY p.ProductId --"/>
+        <TABLEATTRIBUTE NAME="Lookup table name" VALUE="Products"/>
+        <TABLEATTRIBUTE NAME="Lookup Source Filter" VALUE=""/>
+        <TABLEATTRIBUTE NAME="Lookup caching enabled" VALUE="YES"/>
+        <TABLEATTRIBUTE NAME="Lookup policy on multiple match" VALUE="Report Error"/>
+        <TABLEATTRIBUTE NAME="Lookup condition" VALUE="ProductId = IN_ProductId"/>
+        <TABLEATTRIBUTE NAME="Connection Information" VALUE="$DBConnection_Src"/>
+        <TABLEATTRIBUTE NAME="Source Type" VALUE="Database"/>
+        <TABLEATTRIBUTE NAME="Tracing Level" VALUE="Normal"/>
+    </TRANSFORMATION>
+    <MAPPING DESCRIPTION="Monthly product sales fact" ISVALID="YES" NAME="m_Load_Fact_Product_Sales" OBJECTVERSION="1" VERSIONNUMBER="1">
+        <TRANSFORMATION DESCRIPTION="" NAME="SQ_OrderLines" OBJECTVERSION="1" REUSABLE="NO" TYPE="Source Qualifier" VERSIONNUMBER="1">
+            <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="ProductId" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="10" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="integer" DEFAULTVALUE="" DESCRIPTION="" NAME="UnitsSold" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="10" SCALE="0"/>
+            <TRANSFORMFIELD DATATYPE="decimal" DEFAULTVALUE="" DESCRIPTION="" NAME="Revenue" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="19" SCALE="4"/>
+            <TRANSFORMFIELD DATATYPE="date/time" DEFAULTVALUE="" DESCRIPTION="" NAME="PeriodStart" PICTURETEXT="" PORTTYPE="INPUT/OUTPUT" PRECISION="29" SCALE="9"/>
+            <TABLEATTRIBUTE NAME="Sql Query" VALUE="SELECT p.ProductId, SUM(ol.Quantity) AS UnitsSold, SUM(ol.Quantity * ol.UnitPrice) AS Revenue,&#xD;&#xA;       DATEFROMPARTS(YEAR(o.CreatedAt), MONTH(o.CreatedAt), 1) AS PeriodStart&#xD;&#xA;FROM [dbo].[OrderLines] ol WITH (NOLOCK)&#xD;&#xA;JOIN [dbo].[Orders] o WITH (NOLOCK) ON o.OrderId = ol.OrderId&#xD;&#xA;JOIN [dbo].[Products] p WITH (NOLOCK) ON p.ProductId = ol.ProductId&#xD;&#xA;WHERE o.[Status] IN (N&apos;Processed&apos;, N&apos;Completed&apos;)&#xD;&#xA;  AND p.ProductName &lt;&gt; N&apos;Smith &amp; Sons Special&apos;&#xD;&#xA;  AND o.CreatedAt &gt;= &apos;$$PERIOD_START&apos;&#xD;&#xA;GROUP BY p.ProductId, DATEFROMPARTS(YEAR(o.CreatedAt), MONTH(o.CreatedAt), 1)&#xD;&#xA;ORDER BY PeriodStart, p.ProductId"/>
+            <TABLEATTRIBUTE NAME="User Defined Join" VALUE=""/>
+            <TABLEATTRIBUTE NAME="Source Filter" VALUE=""/>
+            <TABLEATTRIBUTE NAME="Number Of Sorted Ports" VALUE="0"/>
+            <TABLEATTRIBUTE NAME="Tracing Level" VALUE="Normal"/>
+            <TABLEATTRIBUTE NAME="Select Distinct" VALUE="NO"/>
+            <TABLEATTRIBUTE NAME="Pre SQL" VALUE="IF OBJECT_ID(&apos;tempdb..#ActiveProducts&apos;) IS NOT NULL DROP TABLE #ActiveProducts;&#xD;&#xA;SELECT ProductId INTO #ActiveProducts FROM dbo.Products WITH (NOLOCK) WHERE IsActive = 1;"/>
+            <TABLEATTRIBUTE NAME="Post SQL" VALUE="DROP TABLE IF EXISTS #ActiveProducts"/>
+        </TRANSFORMATION>
+        <INSTANCE DBDNAME="SalesDB" DESCRIPTION="" NAME="OrderLines" REUSABLE="NO" TRANSFORMATION_NAME="OrderLines" TRANSFORMATION_TYPE="Source Definition" TYPE="SOURCE"/>
+        <INSTANCE DESCRIPTION="" NAME="SQ_OrderLines" REUSABLE="NO" TRANSFORMATION_NAME="SQ_OrderLines" TRANSFORMATION_TYPE="Source Qualifier" TYPE="TRANSFORMATION">
+            <ASSOCIATED_SOURCE_INSTANCE NAME="OrderLines"/>
+        </INSTANCE>
+        <INSTANCE DESCRIPTION="" NAME="LKP_Product" REUSABLE="YES" TRANSFORMATION_NAME="LKP_Product" TRANSFORMATION_TYPE="Lookup Procedure" TYPE="TRANSFORMATION"/>
+        <INSTANCE DESCRIPTION="" NAME="Fact_Product_Sales" REUSABLE="NO" TRANSFORMATION_NAME="Fact_Product_Sales" TRANSFORMATION_TYPE="Target Definition" TYPE="TARGET">
+            <TABLEATTRIBUTE NAME="Update Override" VALUE=""/>
+            <TABLEATTRIBUTE NAME="Pre SQL" VALUE=""/>
+            <TABLEATTRIBUTE NAME="Post SQL" VALUE=""/>
+        </INSTANCE>
+        <CONNECTOR FROMFIELD="ProductId" FROMINSTANCE="OrderLines" FROMINSTANCETYPE="Source Definition" TOFIELD="ProductId" TOINSTANCE="SQ_OrderLines" TOINSTANCETYPE="Source Qualifier"/>
+        <CONNECTOR FROMFIELD="Quantity" FROMINSTANCE="OrderLines" FROMINSTANCETYPE="Source Definition" TOFIELD="UnitsSold" TOINSTANCE="SQ_OrderLines" TOINSTANCETYPE="Source Qualifier"/>
+        <CONNECTOR FROMFIELD="UnitPrice" FROMINSTANCE="OrderLines" FROMINSTANCETYPE="Source Definition" TOFIELD="Revenue" TOINSTANCE="SQ_OrderLines" TOINSTANCETYPE="Source Qualifier"/>
+        <CONNECTOR FROMFIELD="ProductId" FROMINSTANCE="SQ_OrderLines" FROMINSTANCETYPE="Source Qualifier" TOFIELD="IN_ProductId" TOINSTANCE="LKP_Product" TOINSTANCETYPE="Lookup Procedure"/>
+        <CONNECTOR FROMFIELD="ProductId" FROMINSTANCE="SQ_OrderLines" FROMINSTANCETYPE="Source Qualifier" TOFIELD="ProductId" TOINSTANCE="Fact_Product_Sales" TOINSTANCETYPE="Target Definition"/>
+        <CONNECTOR FROMFIELD="PeriodStart" FROMINSTANCE="SQ_OrderLines" FROMINSTANCETYPE="Source Qualifier" TOFIELD="PeriodStart" TOINSTANCE="Fact_Product_Sales" TOINSTANCETYPE="Target Definition"/>
+        <CONNECTOR FROMFIELD="UnitsSold" FROMINSTANCE="SQ_OrderLines" FROMINSTANCETYPE="Source Qualifier" TOFIELD="UnitsSold" TOINSTANCE="Fact_Product_Sales" TOINSTANCETYPE="Target Definition"/>
+        <CONNECTOR FROMFIELD="Revenue" FROMINSTANCE="SQ_OrderLines" FROMINSTANCETYPE="Source Qualifier" TOFIELD="Revenue" TOINSTANCE="Fact_Product_Sales" TOINSTANCETYPE="Target Definition"/>
+        <TARGETLOADORDER ORDER="1" TARGETINSTANCE="Fact_Product_Sales"/>
+        <MAPPINGVARIABLE DATATYPE="string" DEFAULTVALUE="20000101" DESCRIPTION="yyyymmdd" ISEXPRESSIONVARIABLE="NO" ISPARAM="YES" NAME="$$PERIOD_START" PRECISION="8" SCALE="0" USERDEFINED="YES"/>
+        <MAPPINGVARIABLE DATATYPE="integer" DEFAULTVALUE="1" DESCRIPTION="" ISEXPRESSIONVARIABLE="NO" ISPARAM="YES" NAME="$$MIN_UNITS" PRECISION="10" SCALE="0" USERDEFINED="YES"/>
+        <MAPPINGVARIABLE DATATYPE="string" DEFAULTVALUE="Main Warehouse" DESCRIPTION="" ISEXPRESSIONVARIABLE="NO" ISPARAM="YES" NAME="$$REGION" PRECISION="100" SCALE="0" USERDEFINED="YES"/>
+        <ERPINFO/>
+    </MAPPING>
+    <SESSION DESCRIPTION="Session-level override adds the temp-table join and the HAVING clause" ISVALID="YES" MAPPINGNAME="m_Load_Fact_Product_Sales" NAME="s_m_Load_Fact_Product_Sales" REUSABLE="YES" SORTORDER="Binary" VERSIONNUMBER="1">
+        <SESSTRANSFORMATIONINST ISREPARTITIONPOINT="YES" PARTITIONTYPE="PASS THROUGH" PIPELINE="1" SINSTANCENAME="SQ_OrderLines" STAGE="1" TRANSFORMATIONNAME="SQ_OrderLines" TRANSFORMATIONTYPE="Source Qualifier">
+            <ATTRIBUTE NAME="Sql Query" VALUE="SELECT p.ProductId, SUM(ol.Quantity) AS UnitsSold, SUM(ol.Quantity * ol.UnitPrice) AS Revenue,&#xD;&#xA;       DATEFROMPARTS(YEAR(o.CreatedAt), MONTH(o.CreatedAt), 1) AS PeriodStart&#xD;&#xA;FROM [dbo].[OrderLines] ol WITH (NOLOCK)&#xD;&#xA;JOIN [dbo].[Orders] o WITH (NOLOCK) ON o.OrderId = ol.OrderId&#xD;&#xA;JOIN [dbo].[Products] p WITH (NOLOCK) ON p.ProductId = ol.ProductId&#xD;&#xA;JOIN #ActiveProducts ap ON ap.ProductId = p.ProductId&#xD;&#xA;JOIN [dbo].[Inventory] i WITH (NOLOCK) ON i.ProductId = p.ProductId&#xD;&#xA;JOIN [dbo].[Warehouses] w WITH (NOLOCK) ON w.WarehouseId = i.WarehouseId AND w.WarehouseName = &apos;$$REGION&apos;&#xD;&#xA;WHERE o.[Status] IN (N&apos;Processed&apos;, N&apos;Completed&apos;)&#xD;&#xA;  AND o.CreatedAt &gt;= &apos;$$PERIOD_START&apos;&#xD;&#xA;GROUP BY p.ProductId, DATEFROMPARTS(YEAR(o.CreatedAt), MONTH(o.CreatedAt), 1)&#xD;&#xA;HAVING SUM(ol.Quantity) &gt;= $$MIN_UNITS&#xD;&#xA;ORDER BY PeriodStart, p.ProductId"/>
+            <ATTRIBUTE NAME="User Defined Join" VALUE=""/>
+            <ATTRIBUTE NAME="Source Filter" VALUE=""/>
+            <ATTRIBUTE NAME="Pre SQL" VALUE=""/>
+            <ATTRIBUTE NAME="Post SQL" VALUE=""/>
+            <ATTRIBUTE NAME="Owner Name" VALUE="dbo"/>
+        </SESSTRANSFORMATIONINST>
+        <SESSTRANSFORMATIONINST ISREPARTITIONPOINT="NO" PIPELINE="1" SINSTANCENAME="LKP_Product" STAGE="1" TRANSFORMATIONNAME="LKP_Product" TRANSFORMATIONTYPE="Lookup Procedure">
+            <ATTRIBUTE NAME="Lookup Sql Override" VALUE=""/>
+            <ATTRIBUTE NAME="Connection Information" VALUE="$DBConnection_Src"/>
+        </SESSTRANSFORMATIONINST>
+        <SESSTRANSFORMATIONINST ISREPARTITIONPOINT="NO" PIPELINE="1" SINSTANCENAME="Fact_Product_Sales" STAGE="1" TRANSFORMATIONNAME="Fact_Product_Sales" TRANSFORMATIONTYPE="Target Definition">
+            <ATTRIBUTE NAME="Target load type" VALUE="Normal"/>
+            <ATTRIBUTE NAME="Truncate target table option" VALUE="YES"/>
+            <ATTRIBUTE NAME="Table Name Prefix" VALUE="dbo"/>
+            <ATTRIBUTE NAME="Pre SQL" VALUE=""/>
+            <ATTRIBUTE NAME="Post SQL" VALUE="INSERT INTO dbo.Audit_Load WITH (TABLOCK) (LoadName, [RowCount], LoadedAt)&#xD;&#xA;SELECT N&apos;Product Sales&apos;, COUNT(*), GETDATE() FROM dbo.Fact_Product_Sales WITH (NOLOCK) OPTION (MAXDOP 1);&#xD;&#xA;DBCC SHRINKFILE (SalesDW_log, 1);"/>
+        </SESSTRANSFORMATIONINST>
+        <CONFIGREFERENCE REFOBJECTNAME="default_session_config" TYPE="Session config"/>
+        <SESSIONEXTENSION DSQINSTNAME="SQ_OrderLines" DSQINSTTYPE="Source Qualifier" NAME="Relational Reader" SINSTANCENAME="SQ_OrderLines" SUBTYPE="Relational Reader" TRANSFORMATIONTYPE="Reader" TYPE="READER">
+            <CONNECTIONREFERENCE CNXREFNAME="DB Connection" CONNECTIONNAME="" CONNECTIONNUMBER="1" CONNECTIONSUBTYPE="Microsoft SQL Server" CONNECTIONTYPE="Relational" VARIABLE="$DBConnection_Src"/>
+        </SESSIONEXTENSION>
+        <SESSIONEXTENSION DSQINSTNAME="SQ_OrderLines" DSQINSTTYPE="Source Qualifier" NAME="Relational Writer" SINSTANCENAME="Fact_Product_Sales" SUBTYPE="Relational Writer" TRANSFORMATIONTYPE="Writer" TYPE="WRITER">
+            <CONNECTIONREFERENCE CNXREFNAME="DB Connection" CONNECTIONNAME="" CONNECTIONNUMBER="1" CONNECTIONSUBTYPE="Microsoft SQL Server" CONNECTIONTYPE="Relational" VARIABLE="$DBConnection_Tgt"/>
+        </SESSIONEXTENSION>
+        <ATTRIBUTE NAME="Parameter Filename" VALUE="$PMSourceFileDir\etl_params.prm"/>
+    </SESSION>
+</FOLDER>
+</REPOSITORY>
+</POWERMART>

@@ -1,0 +1,255 @@
+{
+  "name": "sql-migration-agent-windows",
+  "description": "Migrates SQL Server T-SQL (procedures, functions, triggers, DDL) and Informatica PowerCenter XML to PostgreSQL / Aurora with the sql-conversion and informatica-etl-conversion skills, and writes tested reporting SQL with the sql-reporting skill: converts, tests on a test database, updates the migration log and reports review flags, under deterministic guardrail hooks with a correlated, hash-chained audit trail. Windows variant: PowerShell/.cmd launchers and python instead of bash/python3.",
+  "prompt": "file://./prompts/sql-migration-agent.md",
+  "welcomeMessage": "SQL Server → PostgreSQL migration agent. Try: \"Convert source/usp_X.sql\", \"Migrate everything pending\", \"Convert source/informatica/wf_x.xml\" or \"Monthly revenue by category with YoY growth\". (Windows)",
+  "tools": [
+    "fs_read",
+    "fs_write",
+    "execute_bash",
+    "grep",
+    "glob",
+    "@awslabs.postgres-mcp-server",
+    "@awslabs.mssql-mcp-server",
+    "@aws-knowledge",
+    "@awslabs.aws-documentation-mcp-server"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "grep",
+    "glob",
+    "@awslabs.postgres-mcp-server/get_table_schema",
+    "@awslabs.postgres-mcp-server/is_database_connected",
+    "@aws-knowledge/search_documentation",
+    "@aws-knowledge/read_documentation",
+    "@awslabs.aws-documentation-mcp-server/search_documentation",
+    "@awslabs.aws-documentation-mcp-server/read_documentation"
+  ],
+  "toolsSettings": {
+    "execute_bash": {
+      "allowedCommands": [
+        "(supporting-files[\\\\/]run_tests\\.cmd|powershell(\\.exe)? -NoProfile -ExecutionPolicy Bypass -File supporting-files[\\\\/]run_tests\\.ps1)( --project| --skill)?",
+        "(\\.kiro[\\\\/]skills[\\\\/]sql-conversion[\\\\/]scripts[\\\\/]run_skill_tests\\.cmd|powershell(\\.exe)? -NoProfile -ExecutionPolicy Bypass -File \\.kiro[\\\\/]skills[\\\\/]sql-conversion[\\\\/]scripts[\\\\/]run_skill_tests\\.ps1)",
+        "(python|py -3|python3)( -X utf8)? \\.kiro[\\\\/]agents[\\\\/]hooks[\\\\/]migration_status\\.py",
+        "(\\.kiro[\\\\/]skills[\\\\/]sql-reporting[\\\\/]scripts[\\\\/]run_skill_tests\\.cmd|powershell(\\.exe)? -NoProfile -ExecutionPolicy Bypass -File \\.kiro[\\\\/]skills[\\\\/]sql-reporting[\\\\/]scripts[\\\\/]run_skill_tests\\.ps1)",
+        "(\\.kiro[\\\\/]skills[\\\\/]informatica-etl-conversion[\\\\/]scripts[\\\\/]run_skill_tests\\.cmd|powershell(\\.exe)? -NoProfile -ExecutionPolicy Bypass -File \\.kiro[\\\\/]skills[\\\\/]informatica-etl-conversion[\\\\/]scripts[\\\\/]run_skill_tests\\.ps1)",
+        "(python|py -3|python3)( -X utf8)? \\.kiro[\\\\/]skills[\\\\/]informatica-etl-conversion[\\\\/]scripts[\\\\/]infa_sql_tool\\.py .*",
+        "(python|py -3|python3)( -X utf8)? \\.kiro[\\\\/]skills[\\\\/]sql-conversion[\\\\/]scripts[\\\\/]migkit[\\\\/]services\\.py (status|probe|sync|show-config|guardrail .*|archive .*|exec -- supporting-files[\\\\/]run_tests\\.cmd.*)",
+        "(python|py -3|python3)( -X utf8)? \\.kiro[\\\\/]skills[\\\\/]sql-conversion[\\\\/]scripts[\\\\/]migkit[\\\\/]audit\\.py (tail|verify|current-run-id).*",
+        "(python|py -3|python3)( -X utf8)? \\.kiro[\\\\/]skills[\\\\/]sql-conversion[\\\\/]scripts[\\\\/]migkit[\\\\/]security\\.py (scan|diff|preflight) .*"
+      ],
+      "autoAllowReadonly": true
+    },
+    "fs_write": {
+      "allowedPaths": [
+        "generated/**",
+        "tests/**",
+        "metadata/migration_log.json",
+        "source/schema/**",
+        "generated/informatica/**",
+        "source/informatica/**"
+      ]
+    }
+  },
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": [
+          "supporting-files/run_tests.cmd*",
+          "supporting-files\\run_tests.cmd*",
+          "powershell -NoProfile -ExecutionPolicy Bypass -File supporting-files/run_tests.ps1*",
+          ".kiro/skills/sql-conversion/scripts/run_skill_tests.cmd*",
+          ".kiro\\skills\\sql-conversion\\scripts\\run_skill_tests.cmd*",
+          "powershell -NoProfile -ExecutionPolicy Bypass -File .kiro/skills/sql-conversion/scripts/run_skill_tests.ps1*",
+          "python .kiro/agents/hooks/migration_status.py*",
+          "python -X utf8 .kiro/agents/hooks/migration_status.py*",
+          "py -3 .kiro/agents/hooks/migration_status.py*",
+          "python .kiro\\agents\\hooks\\migration_status.py*",
+          ".kiro/skills/sql-reporting/scripts/run_skill_tests.cmd*",
+          ".kiro\\skills\\sql-reporting\\scripts\\run_skill_tests.cmd*",
+          "powershell -NoProfile -ExecutionPolicy Bypass -File .kiro/skills/sql-reporting/scripts/run_skill_tests.ps1*",
+          ".kiro/skills/informatica-etl-conversion/scripts/run_skill_tests.cmd*",
+          ".kiro\\skills\\informatica-etl-conversion\\scripts\\run_skill_tests.cmd*",
+          "powershell -NoProfile -ExecutionPolicy Bypass -File .kiro/skills/informatica-etl-conversion/scripts/run_skill_tests.ps1*",
+          "python .kiro/skills/informatica-etl-conversion/scripts/infa_sql_tool.py *",
+          "python -X utf8 .kiro/skills/informatica-etl-conversion/scripts/infa_sql_tool.py *",
+          "py -3 .kiro/skills/informatica-etl-conversion/scripts/infa_sql_tool.py *",
+          "python .kiro\\skills\\informatica-etl-conversion\\scripts\\infa_sql_tool.py *",
+          "python .kiro/skills/sql-conversion/scripts/migkit/services.py status*",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/services.py status*",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/services.py status*",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\services.py status*",
+          "python .kiro/skills/sql-conversion/scripts/migkit/services.py probe*",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/services.py probe*",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/services.py probe*",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\services.py probe*",
+          "python .kiro/skills/sql-conversion/scripts/migkit/services.py sync*",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/services.py sync*",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/services.py sync*",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\services.py sync*",
+          "python .kiro/skills/sql-conversion/scripts/migkit/services.py show-config*",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/services.py show-config*",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/services.py show-config*",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\services.py show-config*",
+          "python .kiro/skills/sql-conversion/scripts/migkit/services.py guardrail *",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/services.py guardrail *",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/services.py guardrail *",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\services.py guardrail *",
+          "python .kiro/skills/sql-conversion/scripts/migkit/services.py archive *",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/services.py archive *",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/services.py archive *",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\services.py archive *",
+          "python .kiro/skills/sql-conversion/scripts/migkit/audit.py tail*",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/audit.py tail*",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/audit.py tail*",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\audit.py tail*",
+          "python .kiro/skills/sql-conversion/scripts/migkit/audit.py verify*",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/audit.py verify*",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/audit.py verify*",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\audit.py verify*",
+          "python .kiro/skills/sql-conversion/scripts/migkit/audit.py current-run-id*",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/audit.py current-run-id*",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/audit.py current-run-id*",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\audit.py current-run-id*",
+          "python .kiro/skills/sql-conversion/scripts/migkit/security.py scan *",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/security.py scan *",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/security.py scan *",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\security.py scan *",
+          "python .kiro/skills/sql-conversion/scripts/migkit/security.py diff *",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/security.py diff *",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/security.py diff *",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\security.py diff *",
+          "python .kiro/skills/sql-conversion/scripts/migkit/security.py preflight *",
+          "python -X utf8 .kiro/skills/sql-conversion/scripts/migkit/security.py preflight *",
+          "py -3 .kiro/skills/sql-conversion/scripts/migkit/security.py preflight *",
+          "python .kiro\\skills\\sql-conversion\\scripts\\migkit\\security.py preflight *"
+        ],
+        "effect": "allow"
+      },
+      {
+        "capability": "mcp",
+        "match": [
+          "awslabs.postgres-mcp-server/get_table_schema",
+          "awslabs.postgres-mcp-server/is_database_connected",
+          "aws-knowledge/*",
+          "awslabs.aws-documentation-mcp-server/*"
+        ],
+        "effect": "allow"
+      }
+    ]
+  },
+  "resources": [
+    "file://.kiro/steering/**/*.md",
+    "skill://.kiro/skills/*/SKILL.md",
+    "file://.kiro/agents/hooks/GUARDRAILS.md",
+    "file://.kiro/skills/sql-conversion/references/security-logging.md"
+  ],
+  "hooks": {
+    "agentSpawn": [
+      {
+        "command": "python -X utf8 .kiro/agents/hooks/audit_event.py agentSpawn",
+        "timeout_ms": 20000
+      },
+      {
+        "command": "python -X utf8 .kiro/agents/hooks/migration_status.py",
+        "timeout_ms": 10000
+      }
+    ],
+    "userPromptSubmit": [
+      {
+        "command": "python -X utf8 .kiro/agents/hooks/audit_event.py userPromptSubmit",
+        "timeout_ms": 5000
+      }
+    ],
+    "preToolUse": [
+      {
+        "matcher": "*",
+        "command": "python -X utf8 .kiro/agents/hooks/guard_tool.py",
+        "timeout_ms": 10000
+      }
+    ],
+    "postToolUse": [
+      {
+        "matcher": "*",
+        "command": "python -X utf8 .kiro/agents/hooks/audit_event.py postToolUse",
+        "timeout_ms": 5000
+      }
+    ],
+    "stop": [
+      {
+        "command": "python -X utf8 .kiro/agents/hooks/audit_event.py stop",
+        "timeout_ms": 5000
+      }
+    ]
+  },
+  "mcpServers": {
+    "awslabs.postgres-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.postgres-mcp-server@latest",
+        "--privilege_check",
+        "enforce"
+      ],
+      "env": {
+        "AWS_PROFILE": "default",
+        "AWS_REGION": "us-east-1",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": true
+    },
+    "awslabs.mssql-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.mssql-mcp-server@latest",
+        "--connection_method",
+        "MSSQL_PASSWORD",
+        "--instance_identifier",
+        "<rds-sqlserver-instance-id>",
+        "--db_endpoint",
+        "<sqlserver-host>",
+        "--region",
+        "us-east-1",
+        "--database",
+        "<SourceDb>"
+      ],
+      "env": {
+        "AWS_PROFILE": "default",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": true
+    },
+    "aws-knowledge": {
+      "url": "https://knowledge-mcp.global.api.aws",
+      "type": "http",
+      "disabled": true
+    },
+    "awslabs.aws-documentation-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-documentation-mcp-server@latest"
+      ],
+      "env": {
+        "AWS_DOCUMENTATION_PARTITION": "aws",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": true
+    },
+    "awslabs.aws-api-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-api-mcp-server@latest"
+      ],
+      "env": {
+        "AWS_REGION": "us-east-1",
+        "READ_OPERATIONS_ONLY": "true"
+      },
+      "disabled": true
+    }
+  },
+  "includeMcpJson": false
+}

@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Stub AWS CLI for migkit tests. Behaviour: $STUB_SCENARIO = ok | down | denied. Every call is
+appended as JSON to $STUB_LOG (argv plus the --cli-input-json document, if any)."""
+import json, os, re, sys
+argv = sys.argv[1:]
+doc = None
+if "--cli-input-json" in argv:
+    path = argv[argv.index("--cli-input-json") + 1].replace("file://", "")
+    doc = json.load(open(path))
+blob = None
+if "--event" in argv:
+    blob = open(argv[argv.index("--event") + 1].replace("fileb://", ""), "rb").read().decode()
+with open(os.environ["STUB_LOG"], "a") as f:
+    f.write(json.dumps({"argv": argv, "input": doc, "blob": blob}) + "\n")
+sc = os.environ.get("STUB_SCENARIO", "ok")
+if sc == "down":
+    sys.stderr.write("\nCould not connect to the endpoint URL: \"https://logs.us-east-1.amazonaws.com/\"\n"); sys.exit(255)
+if sc == "denied":
+    sys.stderr.write("\nAn error occurred (AccessDeniedException) when calling the operation: User is not authorized\n"); sys.exit(254)
+svc, op = argv[0], argv[1]
+def arg(name):
+    return argv[argv.index(name) + 1] if name in argv else None
+out = {}
+if (svc, op) == ("logs", "describe-log-groups"):
+    out = {"logGroups": [{"logGroupName": arg("--log-group-name-prefix")}]}
+elif (svc, op) == ("logs", "create-log-stream"):
+    marker = os.environ["STUB_LOG"] + ".streams"
+    seen = open(marker).read().split() if os.path.exists(marker) else []
+    if arg("--log-stream-name") in seen:
+        sys.stderr.write("An error occurred (ResourceAlreadyExistsException) when calling the CreateLogStream operation\n"); sys.exit(254)
+    open(marker, "a").write(arg("--log-stream-name") + "\n")
+elif (svc, op) == ("logs", "put-log-events"):
+    out = {"nextSequenceToken": "1"}
+elif (svc, op) == ("datazone", "get-domain"):
+    out = {"id": arg("--identifier"), "status": "AVAILABLE"}
+elif (svc, op) == ("datazone", "post-lineage-event"):
+    out = {"id": "evt-1", "domainId": arg("--domain-identifier")}
+elif (svc, op) == ("bedrock", "get-guardrail"):
+    out = {"guardrailId": arg("--guardrail-identifier"), "status": "READY"}
+elif (svc, op) == ("bedrock-runtime", "apply-guardrail"):
+    text = doc["content"][0]["text"]["text"]
+    if re.search(r"(?i)ignore (all )?previous", text):
+        out = {"action": "GUARDRAIL_INTERVENED", "outputs": [{"text": "blocked"}], "assessments": [{
+            "contentPolicy": {"filters": [{"type": "PROMPT_ATTACK", "confidence": "HIGH", "action": "BLOCKED"}]},
+            "sensitiveInformationPolicy": {"piiEntities": [{"type": "PASSWORD", "match": "Sup3rS3cret!", "action": "ANONYMIZED"}]}}]}
+    else:
+        out = {"action": "NONE", "outputs": [], "assessments": []}
+elif (svc, op) == ("s3api", "head-bucket"):
+    out = {}
+elif (svc, op) == ("s3api", "put-object"):
+    out = {"ETag": "\"abc\"", "ChecksumSHA256": "x"}
+elif (svc, op) == ("secretsmanager", "describe-secret"):
+    out = {"Name": arg("--secret-id")}
+elif (svc, op) == ("secretsmanager", "get-secret-value"):
+    print(json.dumps(json.dumps({"username": "etl_reader", "password": "Sup3rS3cret!", "host": "db.example.internal", "port": 5432, "dbname": "sales_test"})))
+    sys.exit(0)
+print(json.dumps(out))

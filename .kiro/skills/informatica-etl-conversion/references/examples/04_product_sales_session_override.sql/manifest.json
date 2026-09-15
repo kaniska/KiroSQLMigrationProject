@@ -1,0 +1,126 @@
+{
+  "source_xml": "04_product_sales_session_override.sqlserver.xml",
+  "entries": [
+    {
+      "id": 1,
+      "file": "01_LKP_Product_Lookup_Sql_Override.sql",
+      "kind": "lookup_override",
+      "attribute": "Lookup Sql Override",
+      "tag_index": 0,
+      "scope": "reusable",
+      "object": "SALES_DW",
+      "instance": "LKP_Product",
+      "owner_type": "Lookup Procedure",
+      "params": [],
+      "ports": [],
+      "tu_refs": [],
+      "output_ports": 3
+    },
+    {
+      "id": 2,
+      "file": "02_LKP_Product_Lookup_table_name.sql",
+      "kind": "lookup_table",
+      "attribute": "Lookup table name",
+      "tag_index": 1,
+      "scope": "reusable",
+      "object": "SALES_DW",
+      "instance": "LKP_Product",
+      "owner_type": "Lookup Procedure",
+      "params": [],
+      "ports": [],
+      "tu_refs": [],
+      "output_ports": 3
+    },
+    {
+      "id": 3,
+      "file": "03_SQ_OrderLines_Sql_Query.sql",
+      "kind": "sq_override",
+      "attribute": "Sql Query",
+      "tag_index": 9,
+      "scope": "mapping",
+      "object": "m_Load_Fact_Product_Sales",
+      "instance": "SQ_OrderLines",
+      "owner_type": "Source Qualifier",
+      "params": [
+        "$$PERIOD_START"
+      ],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "OrderLines"
+      ],
+      "output_ports": 4
+    },
+    {
+      "id": 4,
+      "file": "04_SQ_OrderLines_Pre_SQL.sql",
+      "kind": "pre_sql",
+      "attribute": "Pre SQL",
+      "tag_index": 15,
+      "scope": "mapping",
+      "object": "m_Load_Fact_Product_Sales",
+      "instance": "SQ_OrderLines",
+      "owner_type": "Source Qualifier",
+      "params": [],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "OrderLines"
+      ]
+    },
+    {
+      "id": 5,
+      "file": "05_SQ_OrderLines_Post_SQL.sql",
+      "kind": "post_sql",
+      "attribute": "Post SQL",
+      "tag_index": 16,
+      "scope": "mapping",
+      "object": "m_Load_Fact_Product_Sales",
+      "instance": "SQ_OrderLines",
+      "owner_type": "Source Qualifier",
+      "params": [],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "OrderLines"
+      ]
+    },
+    {
+      "id": 6,
+      "file": "06_SQ_OrderLines_Sql_Query.sql",
+      "kind": "sq_override",
+      "attribute": "Sql Query",
+      "tag_index": 20,
+      "scope": "session",
+      "object": "s_m_Load_Fact_Product_Sales",
+      "instance": "SQ_OrderLines",
+      "owner_type": "Source Qualifier",
+      "params": [
+        "$$MIN_UNITS",
+        "$$PERIOD_START",
+        "$$REGION"
+      ],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "OrderLines"
+      ],
+      "output_ports": 4
+    },
+    {
+      "id": 7,
+      "file": "07_Fact_Product_Sales_Post_SQL.sql",
+      "kind": "post_sql",
+      "attribute": "Post SQL",
+      "tag_index": 32,
+      "scope": "session",
+      "object": "s_m_Load_Fact_Product_Sales",
+      "instance": "Fact_Product_Sales",
+      "owner_type": "Target Definition",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    }
+  ],
+  "notes": []
+}

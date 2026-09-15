@@ -1,0 +1,110 @@
+{
+  "_comment": "Remap applied by 'infa_sql_tool.py inject --map': database/connection types, owner, SQL Server native datatypes \u2192 PostgreSQL native datatypes (with precision/scale for money), bulk load type, and the table/column renames that cascade through definitions, connectors, session instances, lookup table names and :TU. references. Column keys may be 'Table.Column' for table-specific renames.",
+  "database_type": "PostgreSQL",
+  "owner": "public",
+  "target_load_type": "Normal",
+  "datatypes": {
+    "int": "int4",
+    "bigint": "int8",
+    "smallint": "int2",
+    "tinyint": "int2",
+    "bit": "bool",
+    "money": "numeric",
+    "smallmoney": "numeric",
+    "decimal": "numeric",
+    "numeric": "numeric",
+    "float": "float8",
+    "real": "float4",
+    "char": "bpchar",
+    "nchar": "bpchar",
+    "varchar": "varchar",
+    "nvarchar": "varchar",
+    "text": "text",
+    "ntext": "text",
+    "datetime": "timestamp",
+    "datetime2": "timestamp",
+    "smalldatetime": "timestamp",
+    "date": "date",
+    "time": "time",
+    "uniqueidentifier": "uuid",
+    "varbinary": "bytea",
+    "binary": "bytea",
+    "image": "bytea",
+    "xml": "xml"
+  },
+  "datatype_precision": {
+    "money": [
+      19,
+      4
+    ],
+    "smallmoney": [
+      10,
+      4
+    ],
+    "datetime": [
+      26,
+      6
+    ],
+    "datetime2": [
+      26,
+      6
+    ],
+    "smalldatetime": [
+      26,
+      6
+    ],
+    "uniqueidentifier": [
+      36,
+      0
+    ]
+  },
+  "tables": {
+    "Orders": "orders",
+    "Customers": "customers",
+    "OrderLines": "order_lines",
+    "Products": "products",
+    "Inventory": "inventory",
+    "Warehouses": "warehouses",
+    "Stg_Orders": "stg_orders",
+    "Dim_Customer": "dim_customer",
+    "Stg_Customer": "stg_customer",
+    "Fact_Shipping": "fact_shipping",
+    "Fact_Product_Sales": "fact_product_sales",
+    "Audit_Load": "audit_load",
+    "Stg_Customer_Summary": "stg_customer_summary",
+    "CustomerSegments": "customer_segments"
+  },
+  "columns": {
+    "OrderId": "order_id",
+    "CustomerId": "customer_id",
+    "CreatedAt": "created_at",
+    "TotalAmount": "total_amount",
+    "Status": "status",
+    "Notes": "notes",
+    "RequiresApproval": "requires_approval",
+    "UpdatedAt": "updated_at",
+    "FirstName": "first_name",
+    "LastName": "last_name",
+    "Email": "email",
+    "ExternalId": "external_id",
+    "CustomerName": "customer_name",
+    "OrderDate": "order_date",
+    "LoadId": "load_id",
+    "CustomerKey": "customer_key",
+    "IsCurrent": "is_current",
+    "LineId": "line_id",
+    "ProductId": "product_id",
+    "Quantity": "quantity",
+    "UnitPrice": "unit_price",
+    "PeriodStart": "period_start",
+    "UnitsSold": "units_sold",
+    "Revenue": "revenue",
+    "ShippingCost": "shipping_cost",
+    "LastOrderAmount": "last_order_amount",
+    "OrderCount": "order_count",
+    "LifetimeAmount": "lifetime_amount",
+    "DaysSinceLastOrder": "days_since_last_order",
+    "PurchasedSkus": "purchased_skus",
+    "SegmentCode": "segment_code"
+  }
+}

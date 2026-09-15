@@ -1,0 +1,19 @@
+; Informatica parameter file for the worked examples (also used by the self-test renderer).
+; Mapping parameters ($$) are substituted into SQL; $DBConnection_* are session parameters
+; that never appear inside SQL and must stay untouched in the XML.
+; PostgreSQL date literals: use ISO (yyyy-mm-dd or yyyymmdd). mm/dd/yyyy depends on DateStyle (IC-26).
+[SALES_DW.WF:wf_Load_Orders.ST:s_m_Load_Orders_Incremental]
+$$LAST_RUN_DATE=2025-06-01 00:00:00
+$$BATCH_SIZE=100
+$$LOAD_ID=42
+$DBConnection_Src=CONN_SALESDB_SRC_PG
+$DBConnection_Tgt=CONN_SALESDW_TGT_PG
+[SALES_DW.WF:wf_Load_Fact_Shipping.ST:s_m_Load_Fact_Shipping]
+$$ARCHIVE_DAYS=365
+[SALES_DW.WF:wf_Load_Product_Sales.ST:s_m_Load_Fact_Product_Sales]
+$$PERIOD_START=20240101
+$$MIN_UNITS=1
+$$REGION=Main Warehouse
+[SALES_DW.WF:wf_Load_Customer_Summary.ST:s_m_Load_Customer_Summary]
+$$AS_OF_DATE=20260630
+$$LOAD_ID=42

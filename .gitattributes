@@ -1,0 +1,17 @@
+# Line endings that keep every script working on Windows, Linux and macOS after a git checkout.
+* text=auto
+*.sh    text eol=lf
+*.py    text eol=lf
+*.sql   text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.env   text eol=lf
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+*.ps1   text eol=crlf
+# Informatica exports and parameter files are compared byte for byte (encoding, CRLF): never convert
+*.xml   -text
+*.XML   -text
+*.prm   -text
+*.docx  binary
+*.pptx  binary

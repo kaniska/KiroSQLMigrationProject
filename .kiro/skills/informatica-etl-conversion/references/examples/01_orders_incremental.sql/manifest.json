@@ -1,0 +1,78 @@
+{
+  "source_xml": "01_orders_incremental.sqlserver.xml",
+  "entries": [
+    {
+      "id": 1,
+      "file": "01_SQ_Orders_Sql_Query.sql",
+      "kind": "sq_override",
+      "attribute": "Sql Query",
+      "tag_index": 0,
+      "scope": "mapping",
+      "object": "m_Load_Orders_Incremental",
+      "instance": "SQ_Orders",
+      "owner_type": "Source Qualifier",
+      "params": [
+        "$$BATCH_SIZE",
+        "$$LAST_RUN_DATE"
+      ],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "Orders",
+        "Customers"
+      ],
+      "output_ports": 6
+    },
+    {
+      "id": 2,
+      "file": "02_SQ_Orders_Source_Filter.sql",
+      "kind": "source_filter",
+      "attribute": "Source Filter",
+      "tag_index": 2,
+      "scope": "mapping",
+      "object": "m_Load_Orders_Incremental",
+      "instance": "SQ_Orders",
+      "owner_type": "Source Qualifier",
+      "params": [],
+      "ports": [],
+      "tu_refs": [],
+      "sources": [
+        "Orders",
+        "Customers"
+      ]
+    },
+    {
+      "id": 3,
+      "file": "03_Stg_Orders_Pre_SQL.sql",
+      "kind": "pre_sql",
+      "attribute": "Pre SQL",
+      "tag_index": 37,
+      "scope": "session",
+      "object": "s_m_Load_Orders_Incremental",
+      "instance": "Stg_Orders",
+      "owner_type": "Target Definition",
+      "params": [],
+      "ports": [],
+      "tu_refs": []
+    },
+    {
+      "id": 4,
+      "file": "04_Stg_Orders_Post_SQL.sql",
+      "kind": "post_sql",
+      "attribute": "Post SQL",
+      "tag_index": 38,
+      "scope": "session",
+      "object": "s_m_Load_Orders_Incremental",
+      "instance": "Stg_Orders",
+      "owner_type": "Target Definition",
+      "params": [
+        "$$LOAD_ID"
+      ],
+      "ports": [],
+      "tu_refs": []
+    }
+  ],
+  "notes": [
+    "s_m_Load_Orders_Incremental/Stg_Orders: Target load type = Bulk → set Normal for PostgreSQL ODBC targets (IC-19)"
+  ]
+}
