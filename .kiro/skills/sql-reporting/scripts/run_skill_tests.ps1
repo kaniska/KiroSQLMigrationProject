@@ -16,10 +16,14 @@ try {
     & (Join-Path $Engine 'pgtest.ps1') (Join-Path $Scripts 'selftest.sql') -Results $Results
     $rc = $LASTEXITCODE
     if ($rc -eq 2) { exit 2 }
+    Write-Host '################ dialect checks: Redshift / Athena / Spark (report_tool.py) ################'
+    Invoke-MigPython -ArgList @((Join-Path $Scripts 'tests\test_report_dialects.py'), '--results', $Results); $py = $LASTEXITCODE
     Invoke-MigPython -ArgList @((Join-Path $Engine 'check_rule_coverage.py'), '--results', $Results, '--no-steering',
         '--catalog', (Join-Path $Scripts '..\references\patterns.md'), '--prefix', 'RQ', '--prefix', 'RP'); $cov = $LASTEXITCODE
-    if ($rc -eq 0 -and $cov -eq 0) { Write-Host 'SKILL SELF-TEST: PASS'; exit 0 }
-    [Console]::Error.WriteLine("SKILL SELF-TEST: FAIL (tests exit $rc, coverage exit $cov)")
+    Invoke-MigPython -ArgList @((Join-Path $Engine 'check_rule_coverage.py'), '--results', $Results, '--no-steering',
+        '--catalog', (Join-Path $Scripts '..\references\dialects.md'), '--prefix', 'RD'); $cov2 = $LASTEXITCODE
+    if ($rc -eq 0 -and $py -eq 0 -and $cov -eq 0 -and $cov2 -eq 0) { Write-Host 'SKILL SELF-TEST: PASS'; exit 0 }
+    [Console]::Error.WriteLine("SKILL SELF-TEST: FAIL (tests exit $rc, dialect tests $py, coverage $cov/$cov2)")
     exit 1
 } finally {
     Remove-Item -LiteralPath $Results -ErrorAction SilentlyContinue

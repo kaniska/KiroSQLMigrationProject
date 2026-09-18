@@ -244,7 +244,7 @@ slides.push((s, n) => {
 // 6 — Agent workflow with hooks
 slides.push((s, n) => {
   s.background = { color: C.paper };
-  title(s, 'How the agent works a request', 'The model converts; tools, tests and hooks decide what is allowed and what counts as done');
+  title(s, 'How the agents work a request', 'Two agents — conversion and reporting — same method: the model writes; tools, tests and hooks decide what is allowed and what counts as done');
   const steps = [['Request', '"Convert source/usp_X.sql"'], ['Scan input', 'injection · secrets · hidden text'], ['Convert', 'steering + skill + examples'], ['Check', 'no new capability · invariants'], ['Test', 'Aurora test DB · coverage gate'], ['Report', 'flags · findings · run id']];
   const bw = 1.85, gap = 0.22, y = 1.95;
   steps.forEach(([h, b], i) => {
@@ -398,13 +398,13 @@ slides.push((s, n) => {
 // 12 — Tests: numbers
 slides.push((s, n) => {
   s.background = { color: C.paper };
-  title(s, 'Proof: 674 automated checks, one gate', 'Latest full run on Aurora PostgreSQL 17.7 — 0 failures, every catalog rule covered');
-  s.addChart(pres.charts.BAR, [{ name: 'Checks', labels: ['Project suites', 'sql-conversion (SQL)', 'sql-reporting (SQL)', 'Informatica (SQL)', 'migkit + governance (unit)', 'Informatica tool (unit)', 'Assessment · Redshift · Iceberg · schema · change (unit)', 'Agent hooks'], values: [153, 257, 88, 38, 41, 27, 52, 18] }], {
+  title(s, 'Proof: 693 automated checks, one gate', 'Latest full run on Aurora PostgreSQL 17.7 — 0 failures, every catalog rule covered');
+  s.addChart(pres.charts.BAR, [{ name: 'Checks', labels: ['Project suites', 'sql-conversion (SQL)', 'sql-reporting (SQL + dialects)', 'Informatica (SQL)', 'migkit + governance (unit)', 'Informatica tool (unit)', 'Assessment · Redshift · Iceberg · schema · change (unit)', 'Hooks · agents · MCP'], values: [153, 257, 93, 38, 41, 29, 52, 30] }], {
     x: 0.6, y: 1.65, w: 7.3, h: 5.1, barDir: 'bar', chartColors: [C.teal], showValue: true, dataLabelPosition: 'outEnd', dataLabelColor: C.ink, dataLabelFontSize: 12,
     catAxisLabelColor: C.text, catAxisLabelFontSize: 12, valAxisLabelColor: C.muted, valAxisLabelFontSize: 10, valGridLine: { color: 'E3E8EA', size: 0.5 }, catGridLine: { style: 'none' },
     showLegend: false, showTitle: true, title: 'Automated checks by layer', titleFontSize: 14, titleColor: C.ink, catAxisOrientation: 'maxMin',
   });
-  const cov = [['H · P · CC', '27 rules · 86 corner cases'], ['RQ · RP · IC', '23 rules · 15 patterns · 42 cases'], ['SEC · LOG · SVC · GOV', '13 · 8 · 11 · 12 controls'], ['MA · RS · IB · SC · CP', '12 · 52 · 51 · 22 · 20 rules'], ['GRD · HOOK', '12 guardrails · 5 hooks']];
+  const cov = [['H · P · CC', '27 rules · 86 corner cases'], ['RQ · RP · IC', '23 rules · 15 patterns · 42 cases'], ['SEC · LOG · SVC · GOV', '13 · 8 · 11 · 12 controls'], ['MA · RS · IB · SC · CP', '12 · 52 · 51 · 22 · 20 rules'], ['GRD · HOOK · AG · MCP', '12 guardrails · 5 hooks · 8 agent rules · 4 MCP rules']];
   s.addText('Coverage gate: no rule without a test', { x: 8.3, y: 1.8, w: 4.45, h: 0.45, fontFace: HF, fontSize: 15, bold: true, color: C.ink, margin: 0, isTextBox: true });
   cov.forEach(([h, b], i) => {
     const y = 2.4 + i * 0.85;
@@ -458,7 +458,7 @@ slides.push((s, n) => {
     ['Next', C.teal, C.mist, [
       ['Data validation at a snapshot', 'row counts, key sets, checksums, sample diffs on all targets (V-012…V-021 executed)'],
       ['Serving paths', 'Redshift Spectrum / managed Iceberg tables; Glue Data Catalog multi-dialect views'],
-      ['AI-DLC integration (placeholder)', 'gates and packages mapped to Inception / Construction / Operations; steering + package adapter'],
+      ['MCP + AI-DLC (placeholders started)', 'kit MCP server serves the read-only tools today; gates and packages mapped to AI-DLC phases next'],
     ]],
     ['Later', C.violet, C.violetSoft, [
       ['SQL Server stored procedures → Oracle', 'T-SQL → PL/SQL, packages, sequences, exceptions'],
@@ -512,7 +512,7 @@ slides.push((s, n) => {
 slides.push((s) => {
   s.background = { color: C.ink };
   s.addText('Guarded. Tested. Traceable.', { x: 0.8, y: 1.4, w: 11.7, h: 1.0, fontFace: HF, fontSize: 42, bold: true, color: C.paper, margin: 0, isTextBox: true });
-  const msgs = [['Faithful', 'Behaviour parity by rule; every deviation flagged for a business decision'], ['Proven', '674 automated checks and a coverage gate on the real target database'], ['Safe', 'Deterministic guardrails around the agent, the tools and the database'], ['Accountable', 'One run id, tamper-evident audit trail, lineage — locally or in AWS']];
+  const msgs = [['Faithful', 'Behaviour parity by rule; every deviation flagged for a business decision'], ['Proven', '693 automated checks and a coverage gate on the real target database'], ['Safe', 'Deterministic guardrails around the agent, the tools and the database'], ['Accountable', 'One run id, tamper-evident audit trail, lineage — locally or in AWS']];
   msgs.forEach(([h, b], i) => {
     const y = 2.8 + i * 0.95;
     circleNum(s, 0.8, y + 0.08, i + 1, { d: 0.55, size: 18 });

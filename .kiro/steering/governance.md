@@ -11,18 +11,33 @@ implemented in the shared engine `.kiro/skills/sql-conversion/scripts/migkit/con
 
 ## Skills grouped by migration type
 
-| Migration / analytics type | Skill | Steering |
-|---|---|---|
-| **Assessment and planning** — what is it, who consumes it, where should it live, which skill | `migration-assessment` | this file |
-| **Conversion to Aurora PostgreSQL** — procedures, functions, triggers, DDL (OLTP, procedural logic) | `sql-conversion` | `migration.md` |
-| **Conversion to Amazon Redshift** — curated tables, BI edge views, set-based loads | `sql-conversion-redshift` | `redshift.md` |
-| **Conversion to Apache Iceberg on S3** — lake tables, Athena views, Glue Spark jobs | `sql-conversion-iceberg` | `iceberg.md` |
-| **ETL conversion** — Informatica PowerCenter XML with SQL Server SQL | `informatica-etl-conversion` | `informatica-etl.md` |
-| **Reporting and analytics SQL** — KPIs, trends, rankings, cohorts on the converted schema | `sql-reporting` | `migration.md` |
-| **Schema gap analysis and conformance** — snapshots, compare, conform, reference validation | `schema-conformance` | `schema.md` |
-| **Schema change propagation** — table/column renames and casts through the target flow | `schema-change-propagation` | `schema.md` |
+**Group 1 — SQL Server object migration** (views, stored procedures, functions, triggers, table DDL,
+ETL SQL — whether the SQL comes as standalone `.sql` files or embedded in Informatica PowerCenter
+exports). The front door is always `migration-assessment` (`governance.md`); then the target decides
+the skill and the steering:
 
-Security and audit rules (`security.md`) apply to all of them.
+| Target | Standalone SQL objects | SQL embedded in Informatica ETL | Steering |
+|---|---|---|---|
+| Aurora PostgreSQL | `sql-conversion` | `informatica-etl-conversion` (`check --target postgres`, `params/pg_map.json`) | `migration.md` + `informatica-etl.md` |
+| Amazon Redshift | `sql-conversion-redshift` | `informatica-etl-conversion` (`check --target redshift`, `params/redshift_map.json`) | `redshift.md` + `informatica-etl.md` |
+| Iceberg on S3 (Athena / Glue / Spark) | `sql-conversion-iceberg` | `informatica-etl-conversion` (`check --target iceberg`, `params/iceberg_map.json`; PowerCenter lands files on S3, the Glue MERGE job loads Iceberg) | `iceberg.md` + `informatica-etl.md` |
+
+**Group 2 — Reporting and analytics SQL generation** on the converted data:
+
+| Target | Skill | Steering |
+|---|---|---|
+| Aurora PostgreSQL | `sql-reporting` (`report_tool.py check --target postgres`; executed examples) | `reporting.md` + `migration.md` |
+| Amazon Redshift | `sql-reporting` (`--target redshift`, `references/examples/redshift/`) | `reporting.md` + `redshift.md` |
+| Athena over Iceberg · Spark SQL | `sql-reporting` (`--target athena` / `--target spark`, `references/examples/{athena,spark}/`) | `reporting.md` + `iceberg.md` |
+
+**Group 3 — Schema governance** (any target): `schema-conformance` (snapshots, gap analysis,
+conformance, reference checks) and `schema-change-propagation` (rename/cast templates), steering
+`schema.md`.
+
+**Agents:** `sql-migration-agent` covers groups 1 and 3 (conversion assistant);
+`sql-reporting-agent` covers group 2 plus read-only schema snapshots (reporting SQL assistant).
+Both have Windows twins (`*-windows`), the same guardrail hooks and the same audit trail
+(`.kiro/agents/AGENTS.md`). Security and audit rules (`security.md`) apply to all of them.
 
 ## Hard rules
 

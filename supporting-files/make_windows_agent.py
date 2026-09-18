@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate .kiro/agents/sql-migration-agent-windows.json from .kiro/agents/sql-migration-agent.json.
+Generate the Windows twins (<agent>-windows.json) of every agent listed in AGENTS: sql-migration-agent, sql-reporting-agent.
 
 The two agents are identical in tools, resources, write paths, MCP servers and hooks; only the commands
 differ: 'python3 x.py' -> 'python -X utf8 x.py', 'bash x.sh' -> 'x.cmd' (PowerShell launcher), and path
@@ -16,7 +16,8 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SRC = ROOT / ".kiro" / "agents" / "sql-migration-agent.json"
+AGENTS = ["sql-migration-agent", "sql-reporting-agent"]
+SRC = ROOT / ".kiro" / "agents" / "sql-migration-agent.json"          # kept for callers that import SRC/DST
 DST = ROOT / ".kiro" / "agents" / "sql-migration-agent-windows.json"
 SEP = r"[\\/]"
 
@@ -48,8 +49,8 @@ def win_glob(g: str) -> list:
     return [g]
 
 
-def build() -> dict:
-    a = json.loads(SRC.read_text(encoding="utf-8"))
+def build(src: pathlib.Path = SRC) -> dict:
+    a = json.loads(src.read_text(encoding="utf-8"))
     w = copy.deepcopy(a)
     w["name"] = a["name"] + "-windows"
     w["description"] = a["description"].rstrip(".") + ". Windows variant: PowerShell/.cmd launchers and python instead of bash/python3."
@@ -71,12 +72,16 @@ def render(w: dict) -> str:
 
 
 if __name__ == "__main__":
-    text = render(build())
+    stale = []
+    for name in AGENTS:
+        src = ROOT / ".kiro" / "agents" / f"{name}.json"; dst = ROOT / ".kiro" / "agents" / f"{name}-windows.json"
+        text = render(build(src))
+        if "--check" in sys.argv:
+            if (dst.read_text(encoding="utf-8") if dst.exists() else "") != text:
+                stale.append(str(dst))
+        else:
+            dst.write_text(text, encoding="utf-8"); print(f"wrote {dst}")
     if "--check" in sys.argv:
-        current = DST.read_text(encoding="utf-8") if DST.exists() else ""
-        if current != text:
-            print(f"{DST} is out of date: run python3 supporting-files/make_windows_agent.py", file=sys.stderr)
-            sys.exit(1)
-        print("windows agent up to date"); sys.exit(0)
-    DST.write_text(text, encoding="utf-8")
-    print(f"wrote {DST}")
+        if stale:
+            print("out of date: " + ", ".join(stale) + " — run python3 supporting-files/make_windows_agent.py", file=sys.stderr); sys.exit(1)
+        print("windows agents up to date")

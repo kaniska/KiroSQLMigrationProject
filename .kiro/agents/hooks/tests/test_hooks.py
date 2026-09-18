@@ -212,16 +212,17 @@ class PlatformParityTests(unittest.TestCase):
             self.assertIn(b"\r\n", cmd.read_bytes(), f"{cmd} must use CRLF line endings")
             self.assertIn(ps1.name.encode(), cmd.read_bytes(), f"{cmd} must launch {ps1.name}")
             self.assertTrue(ps1.read_bytes().startswith(b"\xef\xbb\xbf"), f"{ps1} needs a UTF-8 BOM for Windows PowerShell 5.1")
-        main = json.loads((root / ".kiro/agents/sql-migration-agent.json").read_text(encoding="utf-8"))
-        win = json.loads((root / ".kiro/agents/sql-migration-agent-windows.json").read_text(encoding="utf-8"))
-        for key in ("tools", "allowedTools", "resources", "mcpServers", "prompt"):
-            self.assertEqual(main[key], win[key], key)
-        self.assertEqual(main["toolsSettings"]["fs_write"], win["toolsSettings"]["fs_write"])
-        self.assertEqual({k: len(v) for k, v in main["hooks"].items()}, {k: len(v) for k, v in win["hooks"].items()})
-        for event, entries in win["hooks"].items():
-            for e in entries:
-                self.assertTrue(e["command"].startswith("python -X utf8 "), e["command"])
-                self.assertTrue((root / e["command"].split()[-1].split()[0]).exists() or (root / e["command"].split()[3]).exists(), e["command"])
+        for agent in ("sql-migration-agent", "sql-reporting-agent"):
+            main = json.loads((root / f".kiro/agents/{agent}.json").read_text(encoding="utf-8"))
+            win = json.loads((root / f".kiro/agents/{agent}-windows.json").read_text(encoding="utf-8"))
+            for key in ("tools", "allowedTools", "resources", "mcpServers", "prompt"):
+                self.assertEqual(main[key], win[key], f"{agent}: {key}")
+            self.assertEqual(main["toolsSettings"]["fs_write"], win["toolsSettings"]["fs_write"])
+            self.assertEqual({k: len(v) for k, v in main["hooks"].items()}, {k: len(v) for k, v in win["hooks"].items()})
+            for event, entries in win["hooks"].items():
+                for e in entries:
+                    self.assertTrue(e["command"].startswith("python -X utf8 "), e["command"])
+                    self.assertTrue((root / e["command"].split()[-1].split()[0]).exists() or (root / e["command"].split()[3]).exists(), e["command"])
         p = subprocess.run([sys.executable, str(root / "supporting-files" / "make_windows_agent.py"), "--check"], capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
 

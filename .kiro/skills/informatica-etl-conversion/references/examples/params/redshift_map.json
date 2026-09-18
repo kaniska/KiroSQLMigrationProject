@@ -1,0 +1,118 @@
+{
+  "_comment": "Map for 'infa_sql_tool.py inject --map' when the ETL target is Amazon Redshift (IC-46): connection type through PowerExchange for Amazon Redshift (or ODBC), dbo → schema, SQL Server native datatypes → Redshift datatypes (VARCHAR lengths are bytes), Bulk → Normal (the connector stages to S3 and runs COPY). Table/column renames follow the same snake_case profile as the PostgreSQL map.",
+  "database_type": "Amazon Redshift",
+  "owner": "sales",
+  "target_load_type": "Normal",
+  "datatypes": {
+    "int": "integer",
+    "bigint": "bigint",
+    "smallint": "smallint",
+    "tinyint": "smallint",
+    "bit": "boolean",
+    "money": "decimal",
+    "smallmoney": "decimal",
+    "decimal": "decimal",
+    "numeric": "decimal",
+    "float": "double precision",
+    "real": "real",
+    "char": "char",
+    "nchar": "char",
+    "varchar": "varchar",
+    "nvarchar": "varchar",
+    "text": "varchar",
+    "ntext": "varchar",
+    "datetime": "timestamp",
+    "datetime2": "timestamp",
+    "smalldatetime": "timestamp",
+    "date": "date",
+    "time": "time",
+    "uniqueidentifier": "varchar",
+    "varbinary": "varbyte",
+    "binary": "varbyte",
+    "image": "varbyte",
+    "xml": "super"
+  },
+  "datatype_precision": {
+    "money": [
+      19,
+      4
+    ],
+    "smallmoney": [
+      10,
+      4
+    ],
+    "datetime": [
+      26,
+      6
+    ],
+    "datetime2": [
+      26,
+      6
+    ],
+    "smalldatetime": [
+      26,
+      6
+    ],
+    "uniqueidentifier": [
+      36,
+      0
+    ],
+    "text": [
+      65535,
+      0
+    ],
+    "ntext": [
+      65535,
+      0
+    ]
+  },
+  "tables": {
+    "Orders": "orders",
+    "Customers": "customers",
+    "OrderLines": "order_lines",
+    "Products": "products",
+    "Inventory": "inventory",
+    "Warehouses": "warehouses",
+    "Stg_Orders": "stg_orders",
+    "Dim_Customer": "dim_customer",
+    "Stg_Customer": "stg_customer",
+    "Fact_Shipping": "fact_shipping",
+    "Fact_Product_Sales": "fact_product_sales",
+    "Audit_Load": "audit_load",
+    "Stg_Customer_Summary": "stg_customer_summary",
+    "CustomerSegments": "customer_segments"
+  },
+  "columns": {
+    "OrderId": "order_id",
+    "CustomerId": "customer_id",
+    "CreatedAt": "created_at",
+    "TotalAmount": "total_amount",
+    "Status": "status",
+    "Notes": "notes",
+    "RequiresApproval": "requires_approval",
+    "UpdatedAt": "updated_at",
+    "FirstName": "first_name",
+    "LastName": "last_name",
+    "Email": "email",
+    "ExternalId": "external_id",
+    "CustomerName": "customer_name",
+    "OrderDate": "order_date",
+    "LoadId": "load_id",
+    "CustomerKey": "customer_key",
+    "IsCurrent": "is_current",
+    "LineId": "line_id",
+    "ProductId": "product_id",
+    "Quantity": "quantity",
+    "UnitPrice": "unit_price",
+    "PeriodStart": "period_start",
+    "UnitsSold": "units_sold",
+    "Revenue": "revenue",
+    "ShippingCost": "shipping_cost",
+    "LastOrderAmount": "last_order_amount",
+    "OrderCount": "order_count",
+    "LifetimeAmount": "lifetime_amount",
+    "DaysSinceLastOrder": "days_since_last_order",
+    "PurchasedSkus": "purchased_skus",
+    "SegmentCode": "segment_code"
+  }
+}

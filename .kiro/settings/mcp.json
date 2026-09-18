@@ -75,6 +75,21 @@
       },
       "disabled": true,
       "autoApprove": []
+    },
+    "sqlmigration-kit": {
+      "command": "python3",
+      "args": [
+        "supporting-files/mcp/kit_mcp_server.py"
+      ],
+      "env": {
+        "MIGRATION_OFFLINE": "0"
+      },
+      "disabled": true,
+      "autoApprove": [
+        "toolbox",
+        "audit_tail"
+      ],
+      "_comment": "PLACEHOLDER/preview: read-only and dry-run kit tools over MCP (supporting-files/mcp/README.md). Enable with disabled=false; Windows: command python, args supporting-files\\\\mcp\\\\kit_mcp_server.py"
     }
   }
 }

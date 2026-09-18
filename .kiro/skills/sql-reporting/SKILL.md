@@ -1,18 +1,36 @@
 ---
 name: sql-reporting
-description: Generate, review and test PostgreSQL / Aurora reporting and analytics SQL - KPIs, time series with gap filling, growth (MoM/YoY), rankings and top-N, shares and Pareto, pivots, cohorts and retention, funnels, percentiles, stock balances, subtotals. Use when asked to write a report query, dashboard SQL, metric, trend, ranking, retention or analytics query on PostgreSQL, or to review one for correctness or performance.
+description: Generate, review and test reporting and analytics SQL on the converted data - Aurora PostgreSQL, Amazon Redshift, Athena (Trino) over Iceberg or Spark SQL - KPIs, time series with gap filling, growth (MoM/YoY), rankings and top-N, shares and Pareto, pivots, cohorts and retention, funnels, percentiles, stock balances, subtotals; 24 correctness rules, 15 patterns with tested PostgreSQL examples, a per-engine dialect catalog with Redshift/Athena/Spark examples and report_tool.py check. Use when asked to write a report query, dashboard SQL, metric, trend, ranking, retention or analytics query on PostgreSQL, Redshift, Athena, Iceberg or Spark, or to review one for correctness, dialect or performance.
 license: Apache-2.0
 metadata:
-  version: "1.0"
-  target: "PostgreSQL 15+ / Aurora PostgreSQL"
+  version: "2.0"
+  targets: "PostgreSQL 15+ / Aurora PostgreSQL (executed) · Amazon Redshift · Athena (Trino) over Iceberg · Spark SQL (dialect-checked)"
 ---
 
-# Reporting and analytics SQL for PostgreSQL
+# Reporting and analytics SQL — PostgreSQL, Redshift, Athena, Spark
 
-This skill turns a report request into **correct, deterministic, tested** PostgreSQL SQL.
-The rules (`RQ-nn`) and patterns (`RP-nn`) live in `references/patterns.md`; every pattern
-has a tested example in `references/examples/`. Paths are relative to the workspace root;
-skill files are under `.kiro/skills/sql-reporting/`.
+This skill turns a report request into **correct, deterministic, tested** SQL on the target the
+data lives on. The rules (`RQ-nn`) and patterns (`RP-nn`) live in `references/patterns.md` and are
+the same on every engine; every pattern has an executed PostgreSQL example in
+`references/examples/`. The dialect catalog `references/dialects.md` (`RD-nn`) says how each
+pattern is spelled on Amazon Redshift, Athena (Trino SQL over Iceberg tables) and Spark SQL, with
+worked examples in `references/examples/{redshift,athena,spark}/` and a checker,
+`scripts/report_tool.py check --target <t>`. Steering: `.kiro/steering/reporting.md` plus the
+target's steering (`migration.md`, `redshift.md`, `iceberg.md`). Paths are relative to the
+workspace root; skill files are under `.kiro/skills/sql-reporting/`.
+
+## Step 0: Choose the target (ask if it is not stated)
+
+| Target | Deliver as | Check with | Prove with |
+|---|---|---|---|
+| Aurora PostgreSQL (default) | `report_<name>()` function, `LANGUAGE sql STABLE` | `report_tool.py check f.sql --target postgres` | the self-test / `pgtest.sh` with hand-computed numbers |
+| Amazon Redshift | `v_report_<name>` view (late-binding over external tables), `PREPARE`/`EXECUTE` or a `params` CTE for parameters | `report_tool.py check f.sql --target redshift` (RD rules + `redshift_tool` linter) | `redshift_tool.py run` on a test workgroup when configured |
+| Athena over Iceberg | `v_report_<name>` view + prepared statements | `--target athena` (RD rules + `iceberg_tool` linter) | `iceberg_tool.py run` on a test database when configured |
+| Spark SQL (Glue / EMR) | `CREATE OR REPLACE TEMPORARY VIEW` / job SQL with `${var}` | `--target spark` | the job's own test run |
+
+`python3 .kiro/skills/sql-reporting/scripts/report_tool.py toolbox --target redshift --need "gap"`
+prints the dialect row for a need; `examples --target athena` lists the worked examples. Reports go to
+`generated/reports/<target>/` and never modify migrated code.
 
 Correctness first: a report that runs is not a report that is right. The rules exist
 because each of them changed a number in a real dashboard.
@@ -40,7 +58,7 @@ of the measure and aggregate there first [RQ-01]. Note semi-additive measures [R
 Match the request to `references/patterns.md` (RP-01 … RP-15) and open the example. Combine
 patterns by stacking CTEs: gap-filled series → window functions → presentation.
 
-### Step 4: Write the SQL
+### Step 4: Write the SQL (PostgreSQL form below; other targets follow `references/dialects.md`)
 - CTE per stage: `base` (filtered rows, single measure definition) → `agg` (grain) →
   `series`/`windows` → final `SELECT` with casts and rounding [RQ-04, RQ-19].
 - Table-alias every column; explicit casts in the output list (`COUNT(*)::INTEGER`).
@@ -56,6 +74,14 @@ patterns by stacking CTEs: gap-filled series → window functions → presentati
 4. **Plan**: `EXPLAIN (ANALYZE, BUFFERS)` on realistic data; no sequential scan on the big
    table when a selective filter exists.
 5. Write these checks as tests (Step 6) so they stay true.
+
+### Step 5b: Dialect check (non-PostgreSQL targets)
+```bash
+python3 .kiro/skills/sql-reporting/scripts/report_tool.py check generated/reports/redshift/v_report_revenue_by_month.sql --target redshift
+```
+0 problems required: gap filling without `generate_series`, no `FILTER` on Redshift, no `DISTINCT ON`,
+no `::` on Athena, `DECIMAL` money, percentiles named exact or approximate, delivery form per target,
+no residual T-SQL, security scan (`SEC-01…04`). Warnings must be answered in the header comment.
 
 ### Step 6: Test it
 Use the shared test engine (`.kiro/skills/sql-conversion/scripts/lib/`): a manifest that loads

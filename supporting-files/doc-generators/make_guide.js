@@ -86,14 +86,14 @@ const numberingConfigs = [
 const body = [
   new Paragraph({ children: [new TextRun({ text: 'SQL Server → Aurora PostgreSQL', font: FONT, size: 44, bold: true, color: ACCENT })], spacing: { after: 60 } }),
   new Paragraph({ children: [new TextRun({ text: 'Migration with Kiro — User Guide', font: FONT, size: 32, color: '404040' })], spacing: { after: 80 } }),
-  new Paragraph({ children: [t('eight skills · targets: Aurora PostgreSQL · Amazon Redshift · Iceberg on S3 · sql-migration-agent · September 2026', { size: 20, color: '707070' })],
+  new Paragraph({ children: [t('eight skills · targets: Aurora PostgreSQL · Amazon Redshift · Iceberg on S3 · two agents (conversion, reporting) · September 2026', { size: 20, color: '707070' })],
     border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: ACCENT, space: 6 } }, spacing: { after: 240 } }),
 
   h1('1. What it does'),
   p('This kit lets Kiro move a SQL Server estate to its approved targets — PostgreSQL on Amazon Aurora for database code, Amazon Redshift for the warehouse, Apache Iceberg tables on S3 (Athena, Glue, Spark) for the data lake: it assesses and routes each object, converts code and table definitions, writes the reports that run on the converted data, migrates Informatica ETL exports, checks that source and target schemas match, and applies rename/cast requests safely — and **proves** every result with automatic tests or a run on a test target.'),
   bullet('**Rules** tell Kiro what a correct conversion looks like: `governance.md` (contracts, statuses, stop codes, which skill), `migration.md` (PostgreSQL), `redshift.md`, `iceberg.md`, `schema.md`, `security.md`.'),
   bullet('**Eight skills** tell Kiro how to do one unit of work and prove it: `migration-assessment` (what is it, where should it go), `sql-conversion` (T-SQL → PostgreSQL), `sql-conversion-redshift`, `sql-conversion-iceberg`, `sql-reporting` (report and dashboard SQL), `informatica-etl-conversion` (PowerCenter XML), `schema-conformance` (source vs target schema), `schema-change-propagation` (renames and casts).'),
-  bullet('**The agent** asks a few intake questions (consumer, approved target, contract, metadata, security, test target), picks the skill and runs the job with safe permissions (`.kiro/agents/sql-migration-agent.json`; prompts in `.kiro/agents/prompts/examples.md`).'),
+  bullet('**Two agents** run the jobs with safe permissions: `sql-migration-agent` (the conversion assistant — asks the intake questions, picks the skill, converts, checks, packages) and `sql-reporting-agent` (the reporting SQL assistant for PostgreSQL, Redshift, Athena and Spark). Prompts: `.kiro/agents/prompts/examples.md`; catalog: `.kiro/agents/AGENTS.md`.'),
   note('Golden rule: the new code must behave exactly like the old code — even where the old code has a bug. Kiro keeps the behaviour and flags it for you to decide.'),
 
   h1('2. What you need'),
@@ -195,6 +195,7 @@ const body = [
   ]),
   note('Why it matters: a report that runs is not a report that is right. Each of the 24 rules in `.kiro/skills/sql-reporting/references/patterns.md` changed a real number — e.g. summing order totals over order lines turns 4 999 into 8 309.'),
   p('Test the skill: `bash .kiro/skills/sql-reporting/scripts/run_skill_tests.sh` (15 report patterns, 88 checks).'),
+  p('Reports on **Redshift, Athena or Spark**: say the target ("… on Redshift"). The same rules apply; the dialect catalog (`references/dialects.md`, RD-01…18) gives the spelling per engine and `report_tool.py check --target redshift|athena|spark` verifies it. Worked examples: `references/examples/redshift`, `athena`, `spark`. Use the dedicated agent: `kiro-cli chat --agent sql-reporting-agent`.'),
   p('Full guide for analysts: `docs/Reporting_Analytics_SQL_User_Guide.docx`.'),
 
   h1('7. Migrate Informatica ETL (informatica-etl-conversion skill)'),
@@ -215,7 +216,8 @@ const body = [
   ]),
   note('Outside the XML you still: create PostgreSQL connection objects with the same `$DBConnection_*` names, re-validate the mappings in Designer, and run one session against the test database. Never edit the XML by hand — entities and byte-exactness are the tool’s job.'),
   p('Real PowerCenter exports are usually **Windows-1252 or ISO-8859-1**, with Windows line breaks and `NAME ="…"` spacing. The tool keeps all of that, so an unchanged file comes back byte for byte (checked on public exports from GitHub). If the export contains text aimed at an AI, hidden characters or passwords, they are listed in `manifest.json` under `security`. Kiro reports them to you and never follows them.'),
-  p('Test the skill: `bash .kiro/skills/informatica-etl-conversion/scripts/run_skill_tests.sh` (5 example mappings — one in real export format with a full SQL Server job — and 44 corner cases, including security and audit).'),
+  p('Targets other than PostgreSQL: `check --target redshift` or `--target iceberg` applies the Redshift or Spark rules to every SQL fragment, and `inject --map params/redshift_map.json` (or `iceberg_map.json`) sets the connection types, owners and datatypes. For the Iceberg lake PowerCenter lands files on S3 and the Glue job from the Iceberg skill loads the table — PowerCenter does not write Iceberg tables directly.'),
+  p('Test the skill: `bash .kiro/skills/informatica-etl-conversion/scripts/run_skill_tests.sh` (5 example mappings — one in real export format with a full SQL Server job — and 46 corner cases, including security, audit and the Redshift/Iceberg targets).'),
 
   h1('8. Choose the target: assess, Redshift, Iceberg, schema checks, schema changes'),
   p('When the target is not Aurora — or not decided yet — start by asking the agent to **assess**. It inventories every object, says who consumes it, where it should live (Materialize the Middle, Retain Views on the Edge), how complex it is, which targets are feasible and which skill converts it. Missing decisions come back as questions, never as guesses.'),
@@ -288,19 +290,20 @@ const body = [
   h2('Skills'),
   table([4300, 4726], ['Task', 'Command'], [
     ['See which skills and steering files are loaded', 'in chat: `/context show` (lists `.kiro/skills/*/SKILL.md` and `.kiro/steering/*.md`)'],
-    ['Browse skills as slash commands', 'in chat: type `/` → `/sql-conversion`, `/sql-reporting`, `/informatica-etl-conversion`'],
+    ['Browse skills as slash commands', 'in chat: type `/` → `/migration-assessment`, `/sql-conversion`, `/sql-conversion-redshift`, `/sql-conversion-iceberg`, `/sql-reporting`, `/informatica-etl-conversion`, `/schema-conformance`, `/schema-change-propagation`'],
     ['Use the skill explicitly', 'in chat: `/sql-conversion source/usp_X.sql`'],
     ['Use the skill from a script', '`kiro-cli chat --no-interactive --trust-tools=fs_read,fs_write,execute_bash "Use the sql-conversion skill to convert source/usp_X.sql and run the tests"`'],
-    ['Test all three skills (examples, corner cases, coverage)', '`bash supporting-files/run_tests.sh --skill`'],
+    ['Test all eight skills, hooks, agents and the MCP placeholder', '`bash supporting-files/run_tests.sh --skill`'],
     ['Test the skill in any project', '`bash .kiro/skills/sql-conversion/scripts/run_skill_tests.sh`'],
     ['See skills in the IDE', 'Kiro panel → **Agent Steering & Skills**'],
   ]),
   gap(),
   h2('Agents'),
   table([4300, 4726], ['Task', 'Command'], [
-    ['List agents', '`kiro-cli agent list` (run inside the project; shows `sql-migration-agent  Workspace`)'],
-    ['Check the agent file', '`kiro-cli agent validate --path .kiro/agents/sql-migration-agent.json` (no output = valid)'],
-    ['Start chat with the agent', '`kiro-cli chat --agent sql-migration-agent`'],
+    ['List agents', '`kiro-cli agent list` (run inside the project; shows `sql-migration-agent` and `sql-reporting-agent` as `Workspace`, plus their `-windows` twins)'],
+    ['Check the agent files', '`bash supporting-files/verify_agents.sh` — structural tests + `kiro-cli agent validate` for all four files (`--smoke` adds one read-only prompt per agent); or `kiro-cli agent validate --path .kiro/agents/<agent>.json` (no output = valid)'],
+    ['Start the conversion assistant', '`kiro-cli chat --agent sql-migration-agent` (Windows: `sql-migration-agent-windows`)'],
+    ['Start the reporting assistant', '`kiro-cli chat --agent sql-reporting-agent` (Windows: `sql-reporting-agent-windows`)'],
     ['Run the agent without chat', '`kiro-cli chat --no-interactive --agent sql-migration-agent "Migrate everything pending"`'],
     ['List / switch agents inside chat', '`/agent`  ·  `/agent swap sql-migration-agent`'],
     ['Make it the default agent', '`kiro-cli agent set-default sql-migration-agent`'],
@@ -328,6 +331,7 @@ const body = [
     ['awslabs.aws-api-mcp-server', 'Read AWS settings, e.g. the Aurora engine version (read-only).'],
   ]),
   note('Security: keep servers read-only; never put passwords in mcp.json; do not install the package "awslabs.aws-dms-mcp-server" — it is not from AWS.'),
+  p('**The kit as an MCP server (placeholder):** `supporting-files/mcp/kit_mcp_server.py` serves the read-only tools (assess, check, compare, toolbox, audit) to any MCP client; it is registered as `sqlmigration-kit` in `.kiro/settings/mcp.json` and disabled until you switch it on. See `supporting-files/mcp/README.md` for what it does not do yet.'),
 
   h1('13. Use the kit in another project'),
   ...steps([

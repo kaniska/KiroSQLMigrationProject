@@ -783,8 +783,25 @@ def top_level_select_list(code: str):
     return None
 
 
+TARGET_KEEPS = {"postgres": set(), "redshift": {"GETDATE()", "DATEADD()", "DATEDIFF()", "CONVERT()", "TOP n"}, "iceberg": set()}
+
+
+def target_linter(target: str):
+    """Residual-SQL linter of the target skill (sql-conversion-redshift / sql-conversion-iceberg), or None for PostgreSQL [IC-45]."""
+    skills = pathlib.Path(__file__).resolve().parents[2]
+    if target == "redshift":
+        sys.path.insert(0, str(skills / "sql-conversion-redshift" / "scripts")); import redshift_tool
+        return lambda sql, name: redshift_tool.check_text(sql, None, name)
+    if target == "iceberg":
+        sys.path.insert(0, str(skills / "sql-conversion-iceberg" / "scripts")); import iceberg_tool
+        return lambda sql, name: iceberg_tool.check_text(sql, None, name, "spark")
+    return None
+
+
 def cmd_check(a):
     d = pathlib.Path(a.dir)
+    target = getattr(a, "target", "postgres") or "postgres"
+    lint = target_linter(target)
     manifest = json.loads((d / "manifest.json").read_text(encoding="utf-8"))
     src_manifest = None
     if a.source_dir:
@@ -824,8 +841,17 @@ def cmd_check(a):
         if k in ("sq_override", "lookup_override", "sql_transformation") and len(split_statements(sql.rstrip().rstrip("--"))) > 1:
             problems.append(f"{e['file']}: override contains more than one statement (IC-33)")
         for pat, label in TSQL_REMNANTS:
+            if label in TARGET_KEEPS[target]:
+                continue                                    # valid on this target (e.g. GETDATE/DATEADD on Redshift)
             if re.search(pat, code_nolit, re.I):
                 problems.append(f"{e['file']}: leftover T-SQL: {label} (IC-11/IC-23/IC-30)")
+        if lint and k not in ("stored_procedure", "call_text"):
+            tp, tw = lint(sql, e["file"])
+            for x in tp:
+                if not x["rule"].startswith("SEC"):
+                    problems.append(f"{e['file']}: {x['rule']} {x['message']} — {x['excerpt']} (IC-45 target {target})")
+            for x in tw:
+                warnings.append(f"{e['file']}: {x['rule']} {x['message']} (IC-45 target {target})")
         if re.search(r"\bpublic\.stg_|\btmp_", code_nolit) and k in ("sq_override", "lookup_override"):
             warnings.append(f"{e['file']}: uses a temp/staging table — same-connection assumption (IC-22)")
         if src_manifest:
@@ -894,7 +920,8 @@ def main():
     p = sub.add_parser("extract"); p.add_argument("xml"); p.add_argument("dir"); p.set_defaults(fn=cmd_extract)
     p = sub.add_parser("inject"); p.add_argument("xml"); p.add_argument("dir"); p.add_argument("out"); p.add_argument("--map"); p.set_defaults(fn=cmd_inject)
     p = sub.add_parser("render"); p.add_argument("dir"); p.add_argument("out"); p.add_argument("--params"); p.add_argument("--bindings"); p.add_argument("--prefix", default="infa_", help="name prefix for the generated views/functions"); p.set_defaults(fn=cmd_render)
-    p = sub.add_parser("check"); p.add_argument("dir"); p.add_argument("--source-dir"); p.add_argument("--xml"); p.set_defaults(fn=cmd_check)
+    p = sub.add_parser("check"); p.add_argument("dir"); p.add_argument("--source-dir"); p.add_argument("--xml")
+    p.add_argument("--target", choices=["postgres", "redshift", "iceberg"], default="postgres", help="target dialect for the residual-SQL checks (IC-45)"); p.set_defaults(fn=cmd_check)
     a = ap.parse_args()
     with LOG.span(f"infa.{a.cmd}", argv=[str(x) for x in sys.argv[1:]], tool_version=TOOL_VERSION) as outcome:
         rc = a.fn(a)

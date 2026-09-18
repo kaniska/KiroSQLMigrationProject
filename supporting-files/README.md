@@ -7,10 +7,12 @@ Every shell script has a PowerShell twin (`.ps1`, Windows PowerShell 5.1+ or Pow
 
 | File (Linux / macOS · Windows) | Purpose | Run |
 |---|---|---|
-| `run_tests.sh` · `run_tests.ps1` / `run_tests.cmd` | Test entry point: project suites, the eight skill self-tests, agent hook tests, rule coverage, one run id, AWS sync | `bash supporting-files/run_tests.sh [--project\|--skill]` · `supporting-files\run_tests.cmd [--project\|--skill]` |
+| `run_tests.sh` · `run_tests.ps1` / `run_tests.cmd` | Test entry point: project suites, the eight skill self-tests, agent hook tests, agent structural tests, MCP placeholder tests, rule coverage, one run id, AWS sync | `bash supporting-files/run_tests.sh [--project\|--skill]` · `supporting-files\run_tests.cmd [--project\|--skill]` |
 | `kiro_migrate.sh` · `kiro_migrate.ps1` / `kiro_migrate.cmd` | Headless batch migration with the agent: scans inputs, converts pending files, runs all tests, archives and syncs evidence | `bash supporting-files/kiro_migrate.sh [source/usp_X.sql …]` · `supporting-files\kiro_migrate.cmd` |
 | `package.sh` · `package.ps1` / `package.cmd` → `package.py` | Zip of the workspace **including `.kiro`**. Clears hidden flags, keeps bytes, line endings and executable bits, and verifies the contents | `bash supporting-files/package.sh [--out FILE] [--include-logs]` · `supporting-files\package.cmd` |
-| `make_windows_agent.py` | Generates `.kiro/agents/sql-migration-agent-windows.json` from the main agent (`--check` detects drift) | `python3 supporting-files/make_windows_agent.py` |
+| `verify_agents.sh` · `verify_agents.ps1` / `verify_agents.cmd` | Verifies both agents: structural tests (AG-01..08), `kiro-cli agent validate` for all four files, workspace listing; `--smoke` runs one read-only headless prompt per agent | `bash supporting-files/verify_agents.sh [--smoke]` · `supporting-files\verify_agents.cmd [--smoke]` |
+| `make_windows_agent.py` | Generates the `-windows.json` twin of every agent (`sql-migration-agent`, `sql-reporting-agent`) from the main agent files (`--check` detects drift) | `python3 supporting-files/make_windows_agent.py` |
+| `mcp/kit_mcp_server.py` | Placeholder MCP server exposing the read-only kit tools (assess, check, compare, toolbox, audit) over stdio; `mcp/README.md` (MCP-01..04), `mcp/tests/` | `python3 supporting-files/mcp/kit_mcp_server.py --list` |
 | `make_skill_runners.py` | Generates `run_skill_tests.ps1` / `.cmd` for every skill that declares `scripts/skill.runner.json` (Python-only self-tests: assessment, Redshift, Iceberg, schema conformance, change propagation); `--check` detects drift | `python3 supporting-files/make_skill_runners.py` |
 | `doc-generators/make_quickref.js` | Builds the one-page `docs/SQLMigrationProject_Quick_Reference.docx` | see below |
 | `doc-generators/make_guide.js` | Builds `docs/SQL_Migration_User_Guide.docx` | see below |

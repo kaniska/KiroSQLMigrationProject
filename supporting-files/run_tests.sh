@@ -80,8 +80,15 @@ if [[ "$MODE" != "project" ]]; then
     python3 "$PROJECT_DIR/.kiro/agents/hooks/tests/test_hooks.py" --results "$HRES" 2>&1 | tail -3; hooks_rc=${PIPESTATUS[0]}
     python3 "$ENGINE/check_rule_coverage.py" --results "$HRES" --no-steering \
         --catalog "$PROJECT_DIR/.kiro/agents/hooks/GUARDRAILS.md" --prefix GRD --prefix HOOK || hooks_rc=1
+    echo "################ AGENTS: structure, allow-lists, Windows twins, kiro-cli validate ################"
+    ARES="$(mktemp -t agents-results.XXXXXX)"
+    python3 "$PROJECT_DIR/.kiro/agents/hooks/tests/test_agents.py" --results "$ARES" 2>&1 | tail -3; [[ ${PIPESTATUS[0]} -ne 0 ]] && hooks_rc=1
+    python3 "$ENGINE/check_rule_coverage.py" --results "$ARES" --no-steering --catalog "$PROJECT_DIR/.kiro/agents/AGENTS.md" --prefix AG || hooks_rc=1
+    echo "################ KIT MCP SERVER (placeholder): protocol + tool allow-list ################"
+    python3 "$PROJECT_DIR/supporting-files/mcp/tests/test_mcp_server.py" --results "$ARES" 2>&1 | tail -3; [[ ${PIPESTATUS[0]} -ne 0 ]] && hooks_rc=1
+    python3 "$ENGINE/check_rule_coverage.py" --results "$ARES" --no-steering --catalog "$PROJECT_DIR/supporting-files/mcp/README.md" --prefix MCP || hooks_rc=1
     set -e
-    rm -f "$HRES"
+    rm -f "$HRES" "$ARES"
 fi
 
 echo "=================================================="

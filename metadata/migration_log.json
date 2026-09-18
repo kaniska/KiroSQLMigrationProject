@@ -8,7 +8,7 @@
   "last_test_run": {
     "date": "2026-09-18",
     "command": "bash supporting-files/run_tests.sh",
-    "run_id": "844d88f6f6ce4befa79d27f2c39382b7",
+    "run_id": "168ac6d6cd3549f5b0bdbc35decbb314",
     "target": "database-1.cluster-ck1imm86sh9q.us-east-1.rds.amazonaws.com / sql_migration_test (PostgreSQL 17.7)",
     "project_suites": {
       "passed": 153,
@@ -23,12 +23,13 @@
       },
       "sql-reporting": {
         "passed": 88,
-        "coverage": "23/23 RQ (RQ-20 manual), 15/15 RP"
+        "dialect_unit_tests": 5,
+        "coverage": "23/23 RQ (RQ-20 manual), 15/15 RP, 18/18 RD (Redshift/Athena/Spark examples via report_tool.py)"
       },
       "informatica-etl-conversion": {
-        "unit_tests": 27,
+        "unit_tests": 29,
         "sql_tests": 38,
-        "coverage": "42/42 IC (IC-31, IC-34 manual)"
+        "coverage": "44/44 IC (IC-31, IC-34 manual; IC-45/46 Redshift and Iceberg targets)"
       },
       "migration-assessment": {
         "unit_tests": 12,
@@ -55,10 +56,18 @@
       "passed": 18,
       "coverage": "12/12 GRD, 5/5 HOOK"
     },
-    "passed": 674,
+    "passed": 693,
     "failed": 0,
     "errors": 0,
-    "result": "ALL TESTS PASSED"
+    "result": "ALL TESTS PASSED",
+    "agents": {
+      "passed": 8,
+      "coverage": "8/8 AG (kiro-cli agent validate ran for all four files)"
+    },
+    "kit_mcp_server": {
+      "passed": 4,
+      "coverage": "4/4 MCP"
+    }
   },
   "summary": {
     "source_files": 4,
@@ -373,8 +382,8 @@
   },
   "skills": {
     "sql-conversion": ".kiro/skills/sql-conversion — T-SQL → PL/pgSQL (17 worked examples, 87 corner cases)",
-    "sql-reporting": ".kiro/skills/sql-reporting — reporting/analytics SQL on PostgreSQL (15 tested report patterns, 24 query rules)",
-    "informatica-etl-conversion": ".kiro/skills/informatica-etl-conversion — PowerCenter XML with SQL Server SQL → PostgreSQL (5 example mappings incl. a Windows-1252 real-format export, 44 corner cases incl. security/audit, 3 public exports round-tripped, infa_sql_tool.py v2 with guardrails and OpenLineage)",
+    "sql-reporting": ".kiro/skills/sql-reporting — reporting/analytics SQL on PostgreSQL (15 tested report patterns, 24 query rules) and on Amazon Redshift / Athena over Iceberg / Spark SQL (18 dialect rules RD with worked examples, report_tool.py check --target)",
+    "informatica-etl-conversion": ".kiro/skills/informatica-etl-conversion — PowerCenter XML with SQL Server SQL → PostgreSQL (5 example mappings incl. a Windows-1252 real-format export, 46 corner cases incl. security/audit and Redshift/Iceberg targets (check --target, params/redshift_map.json, params/iceberg_map.json), 3 public exports round-tripped, infa_sql_tool.py v2 with guardrails and OpenLineage)",
     "migration-assessment": ".kiro/skills/migration-assessment — classify and route objects before converting (inventory, M2RVE placement, complexity, target candidates with blockers, migration-log audit; assess_tool.py, 12 rules MA)",
     "sql-conversion-redshift": ".kiro/skills/sql-conversion-redshift — SQL Server tables, BI views, set-based loads → Amazon Redshift (redshift_tool.py: convert-ddl, check, ledger, run via Redshift Data API on test DBs, package; 5 worked pairs, 52 corner cases RS)",
     "sql-conversion-iceberg": ".kiro/skills/sql-conversion-iceberg — SQL Server tables, loads, views → Apache Iceberg on S3 with Athena / Glue / Spark (iceberg_tool.py: ddl, check, job, ledger, run via Athena on test DBs, package; 4 worked examples, 51 corner cases IB)",
@@ -422,6 +431,7 @@
   },
   "roadmap": {
     "next": [
+      "package the kit MCP server (uvx), schemas from CLI parsers, resources for catalogs, prompts for intake questions, guarded write tools",
       "data validation at a consistent snapshot on all targets (V-012..V-021 executed)",
       "Redshift Spectrum / managed Iceberg serving path, Glue Data Catalog multi-dialect views",
       "live evidence runs on Redshift / Athena test resources"
@@ -431,5 +441,14 @@
       "SQL Server stored procedures → Oracle",
       "Informatica ETL → Redshift and Oracle"
     ]
+  },
+  "agents": {
+    "sql-migration-agent": "SQL conversion assistant (assessment, conversion to Aurora/Redshift/Iceberg, Informatica, schema conformance, change propagation) — .kiro/agents/sql-migration-agent.json (+ -windows twin)",
+    "sql-reporting-agent": "reporting SQL assistant (PostgreSQL, Redshift, Athena/Iceberg, Spark) — .kiro/agents/sql-reporting-agent.json (+ -windows twin)",
+    "tests": ".kiro/agents/hooks/tests/test_agents.py (AG-01..08), supporting-files/verify_agents.sh [--smoke]; kiro-cli 2.21 validates all four files and lists them as Workspace agents"
+  },
+  "mcp": {
+    "inbound": ".kiro/settings/mcp.json (PostgreSQL, SQL Server, AWS Knowledge, AWS Documentation, AWS API — disabled)",
+    "outbound_placeholder": "supporting-files/mcp/kit_mcp_server.py — read-only kit tools over MCP stdio (MCP-01..04), registered as sqlmigration-kit (disabled)"
   }
 }

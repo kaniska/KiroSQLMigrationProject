@@ -9,13 +9,28 @@ is statically checked, tested or executed on a test target, and packaged with a 
 | Skill | What it does | Tested by |
 |---|---|---|
 | `sql-conversion` | T-SQL procedures, functions, triggers, DDL → PL/pgSQL | 17 worked examples, 87 corner cases, 16 hard + 11 parity rules |
-| `sql-reporting` | Reporting / analytics SQL on PostgreSQL (time series, growth, top-N, cohorts, funnels, pivots, subtotals…) | 15 tested report patterns, 24 query rules |
-| `informatica-etl-conversion` | PowerCenter XML exports whose SQL targets SQL Server → PostgreSQL (overrides, pre/post SQL, lookups, stored-procedure calls, datatypes, connections) | 5 example mappings (one in real export format), 44 corner cases, 3 public exports round-tripped, `infa_sql_tool.py` |
+| `sql-reporting` | Reporting / analytics SQL on PostgreSQL, Amazon Redshift, Athena (Trino) over Iceberg or Spark SQL (time series, growth, top-N, cohorts, funnels, pivots, subtotals…) | 15 tested report patterns, 24 query rules, 18 dialect rules with Redshift/Athena/Spark examples, `report_tool.py check --target` |
+| `informatica-etl-conversion` | PowerCenter XML exports whose SQL targets SQL Server → PostgreSQL, Amazon Redshift or the Iceberg lake (overrides, pre/post SQL, lookups, stored-procedure calls, datatypes, connections; `check --target`, per-target maps) | 5 example mappings (one in real export format), 46 corner cases, 3 public exports round-tripped, `infa_sql_tool.py` |
 | `migration-assessment` | Classify and route objects before converting: inventory, M2RVE placement, complexity, review tier, target candidates with blockers, which skill | 12 rules MA, `assess_tool.py` |
 | `sql-conversion-redshift` | Tables, BI edge views, set-based loads → Amazon Redshift (design decisions, informational keys, refcursor procedures, MERGE limits, late-binding views, RLS drafts) | 5 worked pairs, 52 corner cases RS, `redshift_tool.py` (+ Redshift Data API on test DBs) |
 | `sql-conversion-iceberg` | Tables, loads, Athena views, Glue Spark jobs → Apache Iceberg on S3 (spec types, partition transforms, MERGE safety, job template) | 4 worked examples, 51 corner cases IB, `iceberg_tool.py` (+ Athena on test DBs) |
 | `schema-conformance` | Source-vs-target schema snapshots, per-column classification with target profiles, dry-run conformance DDL, reference validation | 22 rules SC, `schema_tool.py` (DDL, live PostgreSQL, Glue catalog) |
 | `schema-change-propagation` | Rename/cast templates through the converted flow: cast-before-rename plan, protected layers, token-aware patches, rollback | 20 rules CP, `change_tool.py` |
+
+**Skill map — grouped by migration type and linked to its steering** (`.kiro/steering/governance.md`):
+
+| Group | Target | Standalone SQL objects (views, procedures, functions, triggers, DDL) | SQL embedded in Informatica ETL | Reporting / analytics SQL | Steering |
+|---|---|---|---|---|---|
+| Assessment (front door) | any | `migration-assessment` | `migration-assessment` | — | `governance.md` |
+| Object migration | Aurora PostgreSQL | `sql-conversion` | `informatica-etl-conversion --target postgres` | `sql-reporting --target postgres` | `migration.md`, `informatica-etl.md`, `reporting.md` |
+| Object migration | Amazon Redshift | `sql-conversion-redshift` | `informatica-etl-conversion --target redshift` | `sql-reporting --target redshift` | `redshift.md`, `informatica-etl.md`, `reporting.md` |
+| Object migration | Iceberg on S3 (Athena / Glue / Spark) | `sql-conversion-iceberg` | `informatica-etl-conversion --target iceberg` (S3 landing + Glue job) | `sql-reporting --target athena` / `--target spark` | `iceberg.md`, `informatica-etl.md`, `reporting.md` |
+| Schema governance | any | `schema-conformance`, `schema-change-propagation` | same | read-only snapshots | `schema.md` |
+
+Two agents drive them: **`sql-migration-agent`** (conversion assistant: groups 1 + schema) and
+**`sql-reporting-agent`** (reporting SQL assistant), each with a Windows twin — see
+[section 7](#7-use-the-agents) and `.kiro/agents/AGENTS.md`. A placeholder MCP server exposes the
+read-only tools to other clients ([section 9](#9-mcp-servers-optional)).
 
 A shared **governance layer** (`.kiro/steering/governance.md`, `migkit/contract.py`) gives every
 skill the same request/output contract, statuses, stop codes, rule ledger, validation manifest and
@@ -29,7 +44,7 @@ CloudWatch Logs, DataZone, Bedrock Guardrails, S3 Object Lock, Secrets Manager �
 local store when not configured or unavailable.
 
 **Status (2026-09-18):** `bash supporting-files/run_tests.sh` → **RESULT: PASS** on Aurora PostgreSQL 17.7
-(674 checks, run `844d88f6…`): project suites, eight skill self-tests (five of them without a
+(693 checks, run `168ac6d6…`): project suites, eight skill self-tests (five of them without a
 database; Redshift, Athena and Glue paths through a stub AWS CLI; the schema skill also compared
 the live Aurora test database), agent hooks and the coverage gate. Every rule, corner case,
 security control, logging rule, governance rule and hook guardrail has a tagged test.
@@ -46,7 +61,7 @@ security control, logging rule, governance rule and hook guardrail has a tagged 
 4. [Skill: sql-reporting](#4-skill-sql-reporting)
 5. [Skill: informatica-etl-conversion](#5-skill-informatica-etl-conversion)
 6. [Skills for assessment, Redshift, Iceberg, schema conformance and change propagation](#6-skills-for-assessment-redshift-iceberg-schema-conformance-and-change-propagation)
-7. [Use the agent](#7-use-the-agent)
+7. [Use the agents](#7-use-the-agents)
 8. [Kiro CLI commands](#8-kiro-cli-commands) — skills, agents, MCP servers
 9. [MCP servers (optional)](#9-mcp-servers-optional)
 10. [Security, audit, lineage and AWS services](#10-security-audit-lineage-and-aws-services)
@@ -288,6 +303,24 @@ histogram — all run on the sample schema plus a deterministic reporting seed.
 Self-test: `bash .kiro/skills/sql-reporting/scripts/run_skill_tests.sh` (88 tests, 23/23
 rules, 15/15 patterns).
 
+### Reporting on Redshift, Athena and Spark
+
+The correctness rules and patterns are the same on every engine; `references/dialects.md`
+(`RD-01…RD-18`) gives the spelling per engine (gap filling with a recursive CTE on Redshift and
+`UNNEST(sequence())` on Athena, `LISTAGG` vs `listagg` vs `array_join(collect_list())`, exact vs
+approximate percentiles, `DECIMAL` money, delivery as views / prepared statements / temporary
+views…). Worked examples: `references/examples/{redshift,athena,spark}/`; steering
+`.kiro/steering/reporting.md`.
+
+```text
+Top 10 customers by lifetime value with share of total, on Redshift
+Cohort retention by signup month on Athena over the lake tables
+```
+```bash
+python3 .kiro/skills/sql-reporting/scripts/report_tool.py check generated/reports/redshift/v_report_customer_pareto.sql --target redshift   # RD rules + Redshift linter
+python3 .kiro/skills/sql-reporting/scripts/report_tool.py toolbox --target athena --need "gap"
+```
+
 ## 5. Skill: informatica-etl-conversion
 
 Migrates the SQL and database settings embedded in PowerCenter XML exports without touching
@@ -342,9 +375,17 @@ with a full SQL Server job: CTE + `ROW_NUMBER`, `OUTER APPLY`/`STRING_AGG`, look
 `SET NOCOUNT`/`IF OBJECT_ID`/`EXEC` Pre SQL, `UPDATE STATISTICS` + `\;` Post SQL). Each has `NN.sqlserver.xml`, `NN.sql/` (converted, reviewable)
 and `NN.postgres.xml` (generated by the tool).
 
+**Targets other than PostgreSQL** (`IC-45`, `IC-46`): the same extraction and injection serve
+Amazon Redshift and the Iceberg lake. `check --target redshift` keeps what Redshift supports
+(`GETDATE`, `DATEADD`, `TOP`) and runs the Redshift linter on every fragment;
+`check --target iceberg` runs the Spark rules; `inject --map params/redshift_map.json` or
+`params/iceberg_map.json` sets connection types, owners and datatypes. PowerCenter does not write
+Iceberg tables: the mapping lands files on S3 and the Glue MERGE job of `sql-conversion-iceberg`
+loads the table (`.kiro/steering/informatica-etl.md`, "Targets other than PostgreSQL").
+
 Self-test: `bash .kiro/skills/informatica-etl-conversion/scripts/run_skill_tests.sh` — unit
 tests, regeneration check of the converted XML, static checks, the rendered SQL executed on
-PostgreSQL, 42/42 automatable corner cases.
+PostgreSQL, 44/44 automatable corner cases.
 
 ## 6. Skills for assessment, Redshift, Iceberg, schema conformance and change propagation
 
@@ -472,7 +513,18 @@ Self-tests: `bash .kiro/skills/<skill>/scripts/run_skill_tests.sh` (Windows `.cm
 needed; Redshift, Athena and Glue paths run against the stub AWS CLI, and live when
 `REDSHIFT_DATABASE`/`REDSHIFT_WORKGROUP` or `ATHENA_DATABASE` point at test resources.
 
-## 7. Use the agent
+## 7. Use the agents
+
+Two agents, each with a generated Windows twin (`.kiro/agents/AGENTS.md`):
+
+| Agent | For | Loads | Writes only under |
+|---|---|---|---|
+| `sql-migration-agent` | **SQL conversion assistant** — assessment, conversion of standalone and Informatica-embedded SQL to Aurora / Redshift / Iceberg, schema conformance, change propagation | all eight skills | `generated/**`, `tests/**`, `metadata/{migration_log.json,design,schema,changes}/`, `source/schema/**`, `source/informatica/**` |
+| `sql-reporting-agent` | **Reporting SQL assistant** — report, dashboard, KPI and analytics SQL on PostgreSQL, Redshift, Athena/Iceberg, Spark; dashboard-query reviews | `sql-reporting`, read-only `schema-conformance`, `check`/`run` of the Redshift and Iceberg tools | `generated/reports/**`, `generated/schema/**`, `tests/**` |
+
+Both are tested structurally (`.kiro/agents/hooks/tests/test_agents.py`, rules `AG-01…08`),
+validated with `kiro-cli agent validate`, and can be smoke-tested headlessly:
+`bash supporting-files/verify_agents.sh [--smoke]` (Windows `supporting-files\verify_agents.cmd`).
 
 `.kiro/agents/sql-migration-agent.json` loads all eight skills (`skill://.kiro/skills/*/SKILL.md`)
 and the steering files. Its prompt is a **router**: it asks the intake questions of
@@ -494,10 +546,13 @@ writes under `generated/`, `tests/`, `metadata/{migration_log.json,design,schema
 The guard also applies with `--trust-tools`. Rules and tests: `.kiro/agents/hooks/GUARDRAILS.md`.
 
 ```bash
-kiro-cli agent list                                   # sql-migration-agent (Workspace)
-kiro-cli chat --agent sql-migration-agent             # interactive
+kiro-cli agent list                                   # sql-migration-agent, sql-reporting-agent (+ -windows twins) as Workspace agents
+kiro-cli chat --agent sql-migration-agent             # conversion assistant
+kiro-cli chat --agent sql-reporting-agent             # reporting assistant
 kiro-cli chat --no-interactive --agent sql-migration-agent "Migrate everything pending"
+kiro-cli chat --no-interactive --agent sql-reporting-agent "Monthly revenue by category for 2025 with YoY growth on PostgreSQL"
 bash supporting-files/kiro_migrate.sh                            # headless batch over pending source files
+bash supporting-files/verify_agents.sh --smoke                   # validate both agents + one read-only prompt each
 ```
 In the IDE pick **sql-migration-agent** in the agent selector. Example prompts and how each is
 routed: `.kiro/agents/prompts/examples.md`. A few:
@@ -510,7 +565,8 @@ routed: `.kiro/agents/prompts/examples.md`. A few:
 | *"Land dbo.FactSales as an Iceberg table partitioned by day(SaleDate)"* | asks for location/catalog if missing → `iceberg_tool.py ddl` → `check` → package |
 | *"Compare source/schema with generated/schema.sql"* | `schema-conformance` → `compare.md` with decisions |
 | *"Apply metadata/changes/q3.csv to generated/ as a dry run"* | `schema-change-propagation` → plan, diff, migration and rollback scripts |
-| *"Monthly revenue by category with YoY growth"* | `sql-reporting` → tested report function |
+| *"Monthly revenue by category with YoY growth"* | `sql-reporting` → tested report function (the `sql-reporting-agent` is the dedicated assistant; the migration agent routes there too) |
+| *"Top 10 customers by lifetime value with share of total, on Redshift"* (`sql-reporting-agent`) | `sql-reporting` → `v_report_customer_pareto` view + `report_tool.py check --target redshift` |
 | *"Convert source/informatica/wf_x.xml"* | `informatica-etl-conversion` |
 
 The agent never guesses a target, a distribution key, a partition, a datatype or an identity
@@ -534,7 +590,34 @@ Checked against Kiro CLI 2.21. Terminal commands start with `kiro-cli`; chat com
 Don't use `kiro-cli mcp add --agent sql-migration-agent`: it rewrites the agent file (inlines the
 prompt, drops `permissions`). Edit the agent JSON instead.
 
+### Run and test the agents and skills from Kiro — step by step
+
+1. **Open the project** in Kiro (IDE: File → Open Folder; CLI: `cd` into it). Kiro Crew users: grant the
+   folder **trust** so workspace skills and agents load.
+2. **Check the kit once**: `bash supporting-files/run_tests.sh --skill` (Windows `supporting-files\run_tests.cmd --skill`)
+   — eight skill self-tests, hook, agent and MCP tests; last line `RESULT: PASS`.
+3. **Check the agents**: `bash supporting-files/verify_agents.sh` → `AGENTS: PASS` (structural tests, `kiro-cli agent validate`
+   for all four files, both listed as `Workspace`). Add `--smoke` for one read-only headless prompt per agent.
+4. **Start the right assistant**: `kiro-cli chat --agent sql-migration-agent` for conversions, schema work and
+   Informatica; `kiro-cli chat --agent sql-reporting-agent` for reports. In the IDE pick the agent in the selector.
+   `/context show` lists the loaded skills and steering; `/agent swap <name>` switches.
+5. **Use a skill directly** when you want to bypass routing: `/sql-conversion source/usp_X.sql`,
+   `/sql-conversion-redshift source/schema/x.sql`, `/sql-reporting monthly revenue by category on Athena`,
+   `/schema-conformance compare source/schema with generated/schema.sql`.
+6. **Test one skill after a change**: `bash .kiro/skills/<skill>/scripts/run_skill_tests.sh` (Windows `.cmd`); the coverage
+   line must show every catalog rule covered.
+7. **Read the evidence**: every answer ends with a run id — `python3 .kiro/skills/sql-conversion/scripts/migkit/audit.py tail --run <run8>`.
+8. **Headless / CI**: `kiro-cli chat --no-interactive --agent <agent> "<prompt>"` (add `--trust-tools=fs_read` for read-only
+   runs); `bash supporting-files/kiro_migrate.sh` for batch conversions.
+
 ## 9. MCP servers (optional)
+
+**Exposing the kit as an MCP server (placeholder / preview).** `supporting-files/mcp/kit_mcp_server.py`
+serves the read-only and dry-run tools (`assess_object`, `check_sql`, `compare_schemas`, `toolbox`,
+`audit_tail`) over MCP stdio so other agents and IDEs can call them; registered as
+`sqlmigration-kit` in `.kiro/settings/mcp.json` (`disabled` until you switch it on); rules
+`MCP-01…04` tested in `run_tests.sh`; roadmap and limits in `supporting-files/mcp/README.md`.
+
 
 All configured but **disabled** in `.kiro/settings/mcp.json` and the agent. Guide:
 `.kiro/skills/sql-conversion/references/mcp-tools.md`.
@@ -598,14 +681,17 @@ raises / sqlstate`, `test_error`, `test_record`) → static checks → suites �
 | sql-conversion: 17 examples + 86 corner cases + static checks + engine correlation | 257 |
 | migkit: security scanner, audit log, local store, AWS services (stub AWS CLI) — SEC/LOG/SVC | 33 |
 | sql-reporting: 15 patterns + 24 rules | 88 |
-| informatica-etl-conversion: tool, security, audit, public corpus (unit) / rendered SQL (PostgreSQL) | 27 / 38 |
+| informatica-etl-conversion: tool, security, audit, public corpus, target maps (unit) / rendered SQL (PostgreSQL) | 29 / 38 |
 | migkit governance: contracts, ledger, validation manifest, packages, DDL parser — GOV | 8 |
 | migration-assessment: inventory, placement, complexity, candidates, contract validation — MA | 12 |
 | sql-conversion-redshift: 52 corner cases, 5 worked pairs, Data API path (stub) — RS | 13 |
 | sql-conversion-iceberg: 51 corner cases, 4 worked examples, Glue job render/compile, Athena path (stub) — IB | 10 |
 | schema-conformance: 22 rules, project regression source ↔ generated (+ live Aurora when configured) — SC | 8 |
 | schema-change-propagation: 20 rules, worked example flow — CP | 9 |
+| sql-reporting dialects: Redshift/Athena/Spark examples and RD-01..18 through `report_tool.py` | 5 |
 | Agent hooks: guardrails GRD-01..12, audit hooks HOOK-01..05 | 18 |
+| Agents: structure, allow-lists, separation of concerns, Windows twins, `kiro-cli agent validate` — AG-01..08 | 8 |
+| Kit MCP server (placeholder): protocol, catalog, calls, argument validation — MCP-01..04 | 4 |
 
 Every PostgreSQL test session runs as `application_name mig:<manifest>:<run8>` after a security
 preflight of all included files. The whole run shares one `MIGRATION_RUN_ID`, printed at the
@@ -743,6 +829,7 @@ Nothing here blocks the tests: `bash supporting-files/run_tests.sh` passes today
 - [ ] **Identity mappings for security-bearing objects.** Views with `ORIGINAL_LOGIN()`/`IS_MEMBER()` produce RLS/masking policy drafts (`SECURITY_MAPPING_REQUIRED`); approve the login → user and group → role mapping before attaching policies.
 - [ ] **Roadmap (short).**
   - **Next:** data validation at a snapshot (row counts, key sets, checksums, sample diffs — `V-012…V-021` executed, not only listed) on all three targets; Redshift Spectrum / Redshift-managed Iceberg tables as a serving path; Glue Data Catalog multi-dialect views for BI.
+  - **Expose the skills as MCP (placeholder started).** `supporting-files/mcp/kit_mcp_server.py` already serves the read-only tools; next: packaging (`uvx`), schemas generated from the CLI parsers, resources for the catalogs, prompts for the intake questions, guarded write tools.
   - **AI-DLC integration (placeholder).** Map the kit's seven gates and packages onto the AI-Driven Development Lifecycle (AWS, 2025): Inception = assessment and placement packages, Construction = conversion/conformance/change "units of work" with the rule ledger as the reviewable artifact, Operations = evidence runs and audit sync. The open-sourced AI-DLC workflows ship as Kiro steering files, so the integration is expected to be steering-level (`.kiro/steering/aidlc.md`) plus a package → unit-of-work adapter; no code is written for it yet.
   - **Later:** SQL Server stored procedures → Oracle, Informatica ETL → Redshift and Oracle. Each reuses the agent router, the governance layer, guardrails, migkit, the test engine and the coverage gate.
 - [ ] **Manual-only rules (no automatic test possible):**
@@ -775,6 +862,7 @@ Nothing here blocks the tests: `bash supporting-files/run_tests.sh` passes today
 | Guardrail hooks | security reviewers | `.kiro/agents/hooks/GUARDRAILS.md` |
 | Quick reference (one page) | everyone | `docs/SQLMigrationProject_Quick_Reference.docx` (also copied to `~/Downloads` on generation) |
 | Governance: contracts, statuses, stop codes, gates | reviewers, architects | `.kiro/steering/governance.md`, `.kiro/skills/sql-conversion/references/governance.md` |
-| Agent prompts | everyone | `.kiro/agents/prompts/examples.md` |
+| Agent prompts and agent catalog | everyone | `.kiro/agents/prompts/examples.md`, `.kiro/agents/AGENTS.md` |
+| Kit MCP server (placeholder) | integrators | `supporting-files/mcp/README.md` |
 
 Generators live in `supporting-files/doc-generators/` (see `supporting-files/README.md`), so the documents can be rebuilt after a change.

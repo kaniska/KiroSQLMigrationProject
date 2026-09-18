@@ -82,6 +82,18 @@ if ($Mode -ne 'project') {
     $hooksRc = $LASTEXITCODE
     Invoke-MigPython -ArgList @((Join-Path $Engine 'check_rule_coverage.py'), '--results', $hres, '--no-steering',
         '--catalog', (Join-Path $ProjectDir '.kiro\agents\hooks\GUARDRAILS.md'), '--prefix', 'GRD', '--prefix', 'HOOK')
+    Write-Host '################ AGENTS: structure, allow-lists, Windows twins, kiro-cli validate ################'
+    $ares = [IO.Path]::GetTempFileName()
+    Invoke-MigPython -ArgList @((Join-Path $ProjectDir '.kiro\agents\hooks\tests\test_agents.py'), '--results', $ares) 2>&1 | Select-Object -Last 3
+    if ($LASTEXITCODE -ne 0) { $hooksRc = 1 }
+    Invoke-MigPython -ArgList @((Join-Path $Engine 'check_rule_coverage.py'), '--results', $ares, '--no-steering', '--catalog', (Join-Path $ProjectDir '.kiro\agents\AGENTS.md'), '--prefix', 'AG')
+    if ($LASTEXITCODE -ne 0) { $hooksRc = 1 }
+    Write-Host '################ KIT MCP SERVER (placeholder): protocol + tool allow-list ################'
+    Invoke-MigPython -ArgList @((Join-Path $ProjectDir 'supporting-files\mcp\tests\test_mcp_server.py'), '--results', $ares) 2>&1 | Select-Object -Last 3
+    if ($LASTEXITCODE -ne 0) { $hooksRc = 1 }
+    Invoke-MigPython -ArgList @((Join-Path $Engine 'check_rule_coverage.py'), '--results', $ares, '--no-steering', '--catalog', (Join-Path $ProjectDir 'supporting-files\mcp\README.md'), '--prefix', 'MCP')
+    if ($LASTEXITCODE -ne 0) { $hooksRc = 1 }
+    Remove-Item -LiteralPath $ares -ErrorAction SilentlyContinue
     if ($LASTEXITCODE -ne 0) { $hooksRc = 1 }
     Remove-Item -LiteralPath $hres -ErrorAction SilentlyContinue
 }

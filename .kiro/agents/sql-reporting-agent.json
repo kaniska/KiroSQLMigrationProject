@@ -1,0 +1,176 @@
+{
+  "name": "sql-reporting-agent",
+  "description": "Reporting and analytics SQL assistant for the converted data: writes, reviews and tests report, dashboard, KPI, trend, ranking, cohort and funnel SQL on Aurora PostgreSQL, Amazon Redshift, Athena (Trino) over Iceberg or Spark SQL with the sql-reporting skill (24 correctness rules, 15 patterns, per-engine dialect catalog), grounds column names in schema snapshots (schema-conformance, read-only), and proves every report with tests or a dialect check plus an evidence run on a test target. Same guardrail hooks and audit trail as the migration agent; never modifies migrated code.",
+  "prompt": "file://./prompts/sql-reporting-agent.md",
+  "welcomeMessage": "SQL reporting agent (Aurora PostgreSQL · Amazon Redshift · Athena/Iceberg · Spark SQL). Try: \"Monthly revenue by category for 2025 with YoY growth\", \"Top 10 customers by lifetime value with share of total, on Redshift\", \"Cohort retention by signup month on Athena\", \"Review this dashboard query: <paste>\". More: .kiro/agents/prompts/examples.md",
+  "tools": [
+    "fs_read",
+    "fs_write",
+    "execute_bash",
+    "grep",
+    "glob",
+    "@awslabs.postgres-mcp-server",
+    "@aws-knowledge",
+    "@awslabs.aws-documentation-mcp-server"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "grep",
+    "glob",
+    "@awslabs.postgres-mcp-server/get_table_schema",
+    "@awslabs.postgres-mcp-server/is_database_connected",
+    "@aws-knowledge/search_documentation",
+    "@aws-knowledge/read_documentation",
+    "@awslabs.aws-documentation-mcp-server/search_documentation",
+    "@awslabs.aws-documentation-mcp-server/read_documentation"
+  ],
+  "toolsSettings": {
+    "execute_bash": {
+      "allowedCommands": [
+        "bash supporting-files/run_tests\\.sh( --project| --skill)?",
+        "bash \\.kiro/skills/sql-reporting/scripts/run_skill_tests\\.sh",
+        "bash \\.kiro/skills/sql-conversion/scripts/pgtest\\.sh .*",
+        "python3 \\.kiro/skills/sql-reporting/scripts/report_tool\\.py (check|toolbox|examples|targets).*",
+        "python3 \\.kiro/skills/schema-conformance/scripts/schema_tool\\.py (snapshot|refs) .*",
+        "python3 \\.kiro/skills/sql-conversion-redshift/scripts/redshift_tool\\.py (check|run) .*",
+        "python3 \\.kiro/skills/sql-conversion-iceberg/scripts/iceberg_tool\\.py (check|run) .*",
+        "python3 \\.kiro/agents/hooks/migration_status\\.py",
+        "python3 \\.kiro/skills/sql-conversion/scripts/migkit/services\\.py (status|probe|show-config)",
+        "python3 \\.kiro/skills/sql-conversion/scripts/migkit/audit\\.py (tail|verify|current-run-id).*",
+        "python3 \\.kiro/skills/sql-conversion/scripts/migkit/security\\.py (scan|diff) .*"
+      ],
+      "autoAllowReadonly": true
+    },
+    "fs_write": {
+      "allowedPaths": [
+        "generated/reports/**",
+        "generated/schema/**",
+        "tests/**"
+      ]
+    }
+  },
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": [
+          "bash supporting-files/run_tests.sh*",
+          "bash .kiro/skills/sql-reporting/scripts/run_skill_tests.sh*",
+          "bash .kiro/skills/sql-conversion/scripts/pgtest.sh *",
+          "python3 .kiro/skills/sql-reporting/scripts/report_tool.py *",
+          "python3 .kiro/skills/schema-conformance/scripts/schema_tool.py snapshot *",
+          "python3 .kiro/skills/schema-conformance/scripts/schema_tool.py refs *",
+          "python3 .kiro/skills/sql-conversion-redshift/scripts/redshift_tool.py check *",
+          "python3 .kiro/skills/sql-conversion-redshift/scripts/redshift_tool.py run *",
+          "python3 .kiro/skills/sql-conversion-iceberg/scripts/iceberg_tool.py check *",
+          "python3 .kiro/skills/sql-conversion-iceberg/scripts/iceberg_tool.py run *",
+          "python3 .kiro/agents/hooks/migration_status.py*",
+          "python3 .kiro/skills/sql-conversion/scripts/migkit/services.py status*",
+          "python3 .kiro/skills/sql-conversion/scripts/migkit/services.py probe*",
+          "python3 .kiro/skills/sql-conversion/scripts/migkit/services.py show-config*",
+          "python3 .kiro/skills/sql-conversion/scripts/migkit/audit.py tail*",
+          "python3 .kiro/skills/sql-conversion/scripts/migkit/audit.py verify*",
+          "python3 .kiro/skills/sql-conversion/scripts/migkit/audit.py current-run-id*",
+          "python3 .kiro/skills/sql-conversion/scripts/migkit/security.py scan *",
+          "python3 .kiro/skills/sql-conversion/scripts/migkit/security.py diff *"
+        ],
+        "effect": "allow"
+      },
+      {
+        "capability": "mcp",
+        "match": [
+          "awslabs.postgres-mcp-server/get_table_schema",
+          "awslabs.postgres-mcp-server/is_database_connected",
+          "aws-knowledge/*",
+          "awslabs.aws-documentation-mcp-server/*"
+        ],
+        "effect": "allow"
+      }
+    ]
+  },
+  "resources": [
+    "file://.kiro/steering/**/*.md",
+    "skill://.kiro/skills/sql-reporting/SKILL.md",
+    "skill://.kiro/skills/schema-conformance/SKILL.md",
+    "skill://.kiro/skills/sql-conversion-redshift/SKILL.md",
+    "skill://.kiro/skills/sql-conversion-iceberg/SKILL.md",
+    "file://.kiro/agents/hooks/GUARDRAILS.md",
+    "file://.kiro/agents/prompts/examples.md",
+    "file://.kiro/skills/sql-reporting/references/dialects.md"
+  ],
+  "hooks": {
+    "agentSpawn": [
+      {
+        "command": "python3 .kiro/agents/hooks/audit_event.py agentSpawn",
+        "timeout_ms": 20000
+      },
+      {
+        "command": "python3 .kiro/agents/hooks/migration_status.py",
+        "timeout_ms": 10000
+      }
+    ],
+    "userPromptSubmit": [
+      {
+        "command": "python3 .kiro/agents/hooks/audit_event.py userPromptSubmit",
+        "timeout_ms": 5000
+      }
+    ],
+    "preToolUse": [
+      {
+        "matcher": "*",
+        "command": "python3 .kiro/agents/hooks/guard_tool.py",
+        "timeout_ms": 10000
+      }
+    ],
+    "postToolUse": [
+      {
+        "matcher": "*",
+        "command": "python3 .kiro/agents/hooks/audit_event.py postToolUse",
+        "timeout_ms": 5000
+      }
+    ],
+    "stop": [
+      {
+        "command": "python3 .kiro/agents/hooks/audit_event.py stop",
+        "timeout_ms": 5000
+      }
+    ]
+  },
+  "mcpServers": {
+    "awslabs.postgres-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.postgres-mcp-server@latest",
+        "--privilege_check",
+        "enforce"
+      ],
+      "env": {
+        "AWS_PROFILE": "default",
+        "AWS_REGION": "us-east-1",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": true
+    },
+    "aws-knowledge": {
+      "url": "https://knowledge-mcp.global.api.aws",
+      "type": "http",
+      "disabled": true
+    },
+    "awslabs.aws-documentation-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-documentation-mcp-server@latest"
+      ],
+      "env": {
+        "AWS_DOCUMENTATION_PARTITION": "aws",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": true
+    }
+  },
+  "includeMcpJson": false
+}

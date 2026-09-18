@@ -176,8 +176,8 @@ const body = [
   h2('3.2 Skills'),
   table([2200, 3300, 3526], ['Skill', 'Procedure and references', 'Scripts and tests'], [
     ['`sql-conversion`', '10 steps; 17 worked examples; 87 corner cases (CC); MCP guide; unsupported features; security-logging catalog; AWS services guide', '`pgtest.sh`, `lib/` (guard, framework, static checks, report), `check_rule_coverage.py`, `migkit/`, 257 SQL + 33 unit tests'],
-    ['`sql-reporting`', '7 steps; 15 report patterns (RP); 24 query rules (RQ)', 'report fixtures and tests, 88 SQL tests'],
-    ['`informatica-etl-conversion`', '6 steps; SQL locations map; 44 corner cases (IC); 5 example mappings; public corpus', '`infa_sql_tool.py`, fixtures, 27 unit + 38 SQL tests'],
+    ['`sql-reporting`', '7 steps + target step; 15 report patterns (RP); 24 query rules (RQ); 18 dialect rules (RD) with Redshift/Athena/Spark examples', 'report fixtures and tests, 88 SQL tests; `report_tool.py check --target`, 5 dialect tests'],
+    ['`informatica-etl-conversion`', '6 steps; SQL locations map; 46 corner cases (IC) incl. Redshift/Iceberg targets; 5 example mappings; public corpus; per-target maps', '`infa_sql_tool.py` (`check --target`), fixtures, 29 unit + 38 SQL tests'],
     ['`migration-assessment`', '5 steps; placement matrix and complexity/tier table (MA-01..12); intake questions', '`assess_tool.py` (assess, inventory, validate, questions), 12 unit tests'],
     ['`sql-conversion-redshift`', '5 steps; 52 corner cases (RS); 5 worked pairs with a design file', '`redshift_tool.py` (convert-ddl, check, ledger, run via Redshift Data API, package), 13 unit tests incl. stub AWS CLI'],
     ['`sql-conversion-iceberg`', '5 steps; 51 corner cases (IB); 4 worked examples (DDL, Athena view, Spark SQL + Glue job, spatial)', '`iceberg_tool.py` (ddl, check, ledger, job, run via Athena, package), Glue job template, 10 unit tests'],
@@ -186,7 +186,14 @@ const body = [
   ]),
   gap(),
   p('Each `SKILL.md` has frontmatter `name` (equal to the folder name) and a `description` with trigger words; Kiro loads the skill when a request matches, or explicitly via `/skill-name`.'),
-  h2('3.3 Agent'),
+  h2('3.3 Agents'),
+  table([2400, 6626], ['Agent', 'Role'], [
+    ['`sql-migration-agent`', 'SQL conversion assistant: routes assessment, conversion of standalone and Informatica-embedded SQL to Aurora / Redshift / Iceberg, schema conformance and change propagation; loads all eight skills; writes under generated/, tests/, metadata/{migration_log.json,design,schema,changes}/, source/schema/, source/informatica/'],
+    ['`sql-reporting-agent`', 'Reporting SQL assistant: report, dashboard and analytics SQL on PostgreSQL, Redshift, Athena/Iceberg and Spark; loads sql-reporting, read-only schema-conformance and the check/run commands of the Redshift and Iceberg tools; writes under generated/reports/, generated/schema/, tests/'],
+    ['`*-windows`', 'Generated twins (make_windows_agent.py); same tools, resources, hooks and write paths; python -X utf8 / .cmd commands'],
+    ['Tests', '`hooks/tests/test_agents.py` (AG-01…08: structure, resources, allow-lists vs workflow commands, write scope, separation of concerns, twins, kiro-cli validate, prompt/skill consistency); `supporting-files/verify_agents.sh [--smoke]`'],
+  ]),
+  gap(),
   table([2400, 6626], ['Agent field', 'Setting in `.kiro/agents/sql-migration-agent.json`'], [
     ['prompt', '`file://./prompts/sql-migration-agent.md` — router: intake questions, skill table, chaining, stop codes as questions, workflows, guardrail behaviour, report format; `prompts/examples.md` lists prompts per skill'],
     ['resources', 'steering `file://.kiro/steering/**/*.md`, skills `skill://.kiro/skills/*/SKILL.md`, GUARDRAILS.md, security-logging.md, prompts/examples.md'],
@@ -214,6 +221,7 @@ const body = [
   gap(),
 
   h1('5. MCP integration'),
+  p('**Outbound (placeholder):** `supporting-files/mcp/kit_mcp_server.py` exposes the kit\'s read-only and dry-run tools (assess_object, check_sql, compare_schemas, toolbox, audit_tail) as an MCP server over stdio (JSON-RPC 2.0, newline-delimited); registered as `sqlmigration-kit` in `.kiro/settings/mcp.json`, disabled by default; every call is validated against the tool schema, confined to the workspace and audited (MCP-01…04). Packaging, resources, prompts and guarded write tools are on the roadmap.'),
   table([2700, 1500, 2600, 2226], ['Server', 'Transport', 'Tools used', 'Safety setting'], [
     ['awslabs.postgres-mcp-server', 'stdio (uvx)', '`get_table_schema`, `run_query` (read-only), `is_database_connected`', '`--privilege_check enforce`; write mode blocked by guard (GRD-05)'],
     ['awslabs.mssql-mcp-server', 'stdio (uvx)', '`run_query` on `sys.sql_modules`', 'read-only login; results saved to `source/` then scanned'],
@@ -226,10 +234,11 @@ const body = [
   note('Test suites always run through the shell: they need psql meta-commands (`\\ir`, `\\if`, `\\gset`) that MCP `run_query` cannot execute.'),
 
   h1('6. Processing pipelines'),
+  p('Group 1 (SQL Server object migration, standalone or embedded in Informatica) uses pipelines 6.1, 6.3–6.5 and 6.7 per target; group 2 (reporting SQL generation) uses 6.2 on every target; group 3 (schema governance) uses 6.6. The grouping and the steering per target are in `.kiro/steering/governance.md`.'),
   h2('6.1 T-SQL conversion (sql-conversion)'),
   ...flow(['Scan source\nsecurity.py scan', 'Read source + schema\nMCP optional', 'Convert\nsteering + examples', 'Diff\nno new capability', 'Test\npgtest.sh + coverage', 'Log + report\nmigration_log.json'], PAL.tool, 'Figure 4 — One routine from source to proven PL/pgSQL.'),
   h2('6.2 Reporting SQL (sql-reporting)'),
-  ...flow(['Pin down\nspecification', 'Schema grains', 'Pattern RP', 'Write function\nread-only', 'Check numbers\nRQ rules', 'Test + deliver'], PAL.tool, 'Figure 5 — Reports are tested functions on the converted schema.'),
+  ...flow(['Target\npostgres · redshift · athena · spark', 'Pin down\nspecification · grains', 'Pattern RP\n+ dialect RD', 'Write\nfunction · view · temp view', 'report_tool check\nRQ + RD + linter', 'Test / evidence run'], PAL.tool, 'Figure 5 — Reports are tested functions on PostgreSQL and dialect-checked views on Redshift, Athena and Spark.'),
   h2('6.3 Assessment and placement (migration-assessment)'),
   ...flow(['Intake questions\nconsumer · target · contract', 'Inventory\nconstructs · deps · security', 'Role + complexity\nM2RVE · L1–L4 · T1–T3', 'Target candidates\nblockers per target', 'Recommend skill\nstop codes as questions', 'classification.json\nassessment.md'], PAL.tool, 'Figure 6a — Classify before you translate.'),
   h2('6.4 Amazon Redshift (sql-conversion-redshift)'),
@@ -307,9 +316,9 @@ const body = [
   ...layers([
     { label: 'Engine', fill: PAL.tool, boxes: ['preflight\nSEC-12', 'guard_and_reset\ntest DB · no superuser · run id', 'framework\nassert equal/true/raises/sqlstate', 'report\nsummary · exit code · results file'] },
     { label: 'Suites', fill: PAL.skill, boxes: ['project suites\n153', 'sql-conversion\n257 SQL', 'sql-reporting\n88 SQL', 'informatica\n38 SQL'] },
-    { label: 'Unit / hooks', fill: PAL.kiro, boxes: ['migkit + governance\n41 (stub AWS CLI)', 'infa_sql_tool\n27', 'assessment · Redshift · Iceberg · schema · change\n12 · 13 · 10 · 8 · 9', 'agent hooks\n18'] },
-    { label: 'Coverage gate', fill: PAL.data, boxes: ['H · P · CC', 'RQ · RP', 'IC', 'SEC · LOG · SVC · GOV', 'MA · RS · IB · SC · CP', 'GRD · HOOK'] },
-  ], 'Figure 10 — 674 checks; every catalog row marked auto must be covered by a tagged test.'),
+    { label: 'Unit / hooks', fill: PAL.kiro, boxes: ['migkit + governance\n41 (stub AWS CLI)', 'infa_sql_tool\n29 · report dialects 5', 'assessment · Redshift · Iceberg · schema · change\n12 · 13 · 10 · 8 · 9', 'agent hooks 18\nagents 8 · MCP 4'] },
+    { label: 'Coverage gate', fill: PAL.data, boxes: ['H · P · CC', 'RQ · RP · RD', 'IC', 'SEC · LOG · SVC · GOV', 'MA · RS · IB · SC · CP', 'GRD · HOOK · AG · MCP'] },
+  ], 'Figure 10 — 693 checks; every catalog row marked auto must be covered by a tagged test.'),
   table([2800, 6226], ['Test type', 'What it proves'], [
     ['Behaviour / parity tests', 'Converted routines return the same results as the source, including preserved bugs'],
     ['Worked-example tests', 'Every example in every skill runs on PostgreSQL, so templates are correct'],
@@ -353,7 +362,7 @@ const body = [
 
   h1('13. Roadmap'),
   table([1700, 7326], ['Stage', 'Skills'], [
-    ['Delivered', 'SQL Server → Aurora PostgreSQL (T-SQL code and DDL) · reporting and analytics SQL · Informatica ETL with SQL Server SQL → PostgreSQL · migration assessment and placement · SQL Server → Amazon Redshift · SQL Server → Iceberg on S3 (Athena / Glue / Spark) · schema gap analysis and conformance · schema change propagation · governance layer (contracts, statuses, stop codes, ledger, validation manifest, packages)'],
+    ['Delivered', 'SQL Server → Aurora PostgreSQL (T-SQL code and DDL) · reporting and analytics SQL on PostgreSQL, Redshift, Athena and Spark · Informatica ETL with SQL Server SQL → PostgreSQL, Redshift or the Iceberg lake · migration assessment and placement · SQL Server → Amazon Redshift · SQL Server → Iceberg on S3 (Athena / Glue / Spark) · schema gap analysis and conformance · schema change propagation · governance layer · two agents (conversion, reporting) · MCP server placeholder'],
     ['Next', 'Data validation at a consistent snapshot on all targets (row counts, key sets, checksums, sample diffs — V-012…V-021 executed) · Redshift Spectrum and Redshift-managed Iceberg tables as a serving path · Glue Data Catalog multi-dialect views · live evidence runs once Redshift/Athena test resources exist'],
     ['AI-DLC integration (placeholder)', 'Map the seven gates and the packages onto the AI-Driven Development Lifecycle (AWS, 2025): Inception = assessment and placement packages, Construction = conversion / conformance / change units of work with the rule ledger as the reviewable artifact, Operations = evidence runs and audit sync. Expected form: a steering file (`.kiro/steering/aidlc.md`, the open-sourced AI-DLC workflows ship as Kiro steering) plus a package → unit-of-work adapter. Not started.'],
     ['Later', 'SQL Server stored procedures → Oracle (PL/SQL) · Informatica ETL → Redshift and Oracle'],

@@ -1,4 +1,4 @@
-# Agent guardrail and audit hooks (sql-migration-agent, sql-migration-agent-windows)
+# Agent guardrail and audit hooks (sql-migration-agent, sql-reporting-agent and their Windows twins)
 
 Kiro runs these hooks outside the model. Instructions hidden in a source file, an XML export or a
 pasted script therefore cannot talk the agent past them. `guard_tool.py` (`preToolUse`) exits with
@@ -36,4 +36,4 @@ privilege for the AWS credentials the session uses, and the database role withou
 | HOOK-02 | `userPromptSubmit`: logs prompt length and SHA-256 only (never the text); warns the agent when the prompt carries injection, hidden characters or credentials | auto |
 | HOOK-03 | `postToolUse` / `preToolUse` decisions: tool name, redacted and length-capped input (file contents as length + SHA-256), outcome; `guard.allowed` / `guard.blocked` with the rule id | auto |
 | HOOK-04 | `stop`: `session.stop` record and a background `services.py sync` (CloudWatch Logs / DataZone when configured); hook errors are logged as `hook.error` and never fail the session | auto |
-| HOOK-05 | Cross-platform parity: every `.sh` has a PowerShell `.ps1` twin and a `.cmd` launcher (LF / CRLF / UTF-8 BOM as each platform needs); `sql-migration-agent-windows.json` is generated from the agent (same tools, resources, write paths, MCP servers and hooks; `python -X utf8` and `.cmd` commands) and checked for drift; guard rules also match PowerShell and cmd.exe forms | auto |
+| HOOK-05 | Cross-platform parity: every `.sh` has a PowerShell `.ps1` twin and a `.cmd` launcher (LF / CRLF / UTF-8 BOM as each platform needs); `sql-migration-agent-windows.json` and `sql-reporting-agent-windows.json` are generated from the agents (same tools, resources, write paths, MCP servers and hooks; `python -X utf8` and `.cmd` commands) and checked for drift; guard rules also match PowerShell and cmd.exe forms | auto |

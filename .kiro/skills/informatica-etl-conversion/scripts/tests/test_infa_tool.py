@@ -196,6 +196,35 @@ class ToolTests(unittest.TestCase):
         for needle in ("IC-03", "IC-04", "IC-05", "IC-07", "[bracketed identifier]", "table hint", "N'' literal", "IC-33"):
             self.assertIn(needle, out, needle)
 
+    def test_check_target_redshift_and_iceberg(self):
+        """IC-T30 check --target keeps what the target supports (GETDATE/DATEADD/TOP on Redshift) and runs the target skill's linter on every fragment; PostgreSQL stays the default [IC-45]"""
+        d = self.tmp / "tgt"; d.mkdir(exist_ok=True)
+        entries = [{"id": 1, "file": "01.sql", "kind": "sq_override", "attribute": "Sql Query", "tag_index": 0, "scope": "mapping", "object": "m", "instance": "SQ", "params": [], "ports": [], "tu_refs": [], "output_ports": 2},
+                   {"id": 2, "file": "02.sql", "kind": "sq_override", "attribute": "Sql Query", "tag_index": 1, "scope": "mapping", "object": "m", "instance": "SQ2", "params": [], "ports": [], "tu_refs": [], "output_ports": 2}]
+        (d / "manifest.json").write_text(json.dumps({"entries": entries, "notes": []}))
+        (d / "01.sql").write_text("SELECT TOP 10 o.order_id, DATEADD(day, -1, GETDATE()) AS d FROM sales.orders o\n")
+        (d / "02.sql").write_text("SELECT o.order_id, ISNULL(o.notes, '') AS n FROM sales.orders o\n")
+        rc, out = run("check", dir=str(d), source_dir=None, xml=None, target="postgres"); self.assertEqual(rc, 1); self.assertIn("GETDATE()", out); self.assertIn("ISNULL()", out)
+        rc, out = run("check", dir=str(d), source_dir=None, xml=None, target="redshift"); self.assertEqual(rc, 1)
+        self.assertNotIn("leftover T-SQL: GETDATE()", out); self.assertNotIn("leftover T-SQL: TOP n", out); self.assertIn("RS-11", out); self.assertIn("IC-45 target redshift", out)
+        rc, out = run("check", dir=str(d), source_dir=None, xml=None, target="iceberg"); self.assertEqual(rc, 1); self.assertIn("IB-43", out); self.assertIn("IB-45", out)
+        (d / "01.sql").write_text("SELECT o.order_id, DATEADD(day, -1, GETDATE()) AS d FROM sales.orders o\n"); (d / "02.sql").write_text("SELECT o.order_id, NVL(o.notes, '') AS n FROM sales.orders o\n")
+        rc, out = run("check", dir=str(d), source_dir=None, xml=None, target="redshift"); self.assertEqual(rc, 0, out)
+        rc, out = run("check", dir=str(d), source_dir=None, xml=None); self.assertEqual(rc, 1, "default target is PostgreSQL")
+
+    def test_target_maps_redshift_and_iceberg(self):
+        """IC-T31 inject --map with the Redshift map rewrites connection type, owner and datatypes for Redshift; the Iceberg map routes targets to S3 landing + Glue job and never claims a direct Iceberg write [IC-46]"""
+        rs = json.loads((EX / "params" / "redshift_map.json").read_text(encoding="utf-8")); ib = json.loads((EX / "params" / "iceberg_map.json").read_text(encoding="utf-8"))
+        self.assertEqual(rs["database_type"], "Amazon Redshift"); self.assertEqual(rs["datatypes"]["money"], "decimal"); self.assertEqual(rs["datatypes"]["nvarchar"], "varchar"); self.assertEqual(rs["datatype_precision"]["text"], [65535, 0])
+        self.assertEqual(ib["datatypes"]["nvarchar"], "string"); self.assertEqual(ib["datatypes"]["varbinary"], "binary"); self.assertIn("iceberg_tool.py job", ib["load_path"]["loader"]); self.assertIn("read-only", ib["load_path"]["reads"])
+        out = self.tmp / "01.redshift.xml"
+        rc, _ = run("inject", xml=str(EX / "01_orders_incremental.sqlserver.xml"), dir=str(EX / "01_orders_incremental.sql"), out=str(out), map=str(EX / "params" / "redshift_map.json"))
+        self.assertEqual(rc, 0)
+        x = out.read_text(encoding="utf-8", errors="replace")
+        self.assertIn('DATABASETYPE="Amazon Redshift"', x); self.assertNotIn('CONNECTIONSUBTYPE="Microsoft SQL Server"', x); self.assertNotIn('OWNERNAME="dbo"', x)
+        self.assertIn('NAME="Owner Name" VALUE="sales"', x); self.assertIn('DATATYPE="decimal"', x); self.assertNotIn('DATATYPE="money"', x); self.assertNotIn('DATATYPE="nvarchar"', x)
+        self.assertIn('<REPOSITORY NAME="REP_SALES_DW" VERSION="188" CODEPAGE="UTF-8" DATABASETYPE="Microsoft SQL Server">', x)
+
     def test_split_statements_and_escaped_semicolon(self):
         """IC-T10 Pre/Post SQL splits on ; and honours the Informatica \\; escape; comment-only parts are dropped [IC-10]"""
         self.assertEqual(tool.split_statements("a; b\\;c; -- note only\n; d"), ["a", "b;c", "d"])

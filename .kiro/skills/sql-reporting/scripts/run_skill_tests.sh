@@ -3,7 +3,8 @@
 # sql-reporting skill — self-test
 #   1. loads the sample schema + reporting fixtures + 15 example reports into a TEST db
 #   2. runs the pattern tests and the query-rule tests
-#   3. checks that every RQ-nn rule and RP-nn pattern has a tagged test
+#   3. runs the dialect tests (Redshift / Athena / Spark examples through report_tool.py check)
+#   4. checks that every RQ-nn rule, RP-nn pattern and RD-nn dialect rule has a tagged test
 # Needs the sql-conversion skill next to this one (shared test engine).
 # Connection: PG* variables; PG_IAM_AUTH=1 + AWS_REGION for Aurora IAM auth.
 # ============================================================
@@ -17,9 +18,13 @@ set +e
 bash "$ENGINE/pgtest.sh" "$SCRIPTS/selftest.sql" --results "$RESULTS"; rc=$?
 set -e
 [[ $rc -eq 2 ]] && exit 2
+echo "################ dialect checks: Redshift · Athena · Spark (report_tool.py) ################"
 set +e
+python3 "$SCRIPTS/tests/test_report_dialects.py" --results "$RESULTS"; py=$?
 python3 "$ENGINE/check_rule_coverage.py" --results "$RESULTS" --no-steering \
     --catalog "$SCRIPTS/../references/patterns.md" --prefix RQ --prefix RP; cov=$?
+python3 "$ENGINE/check_rule_coverage.py" --results "$RESULTS" --no-steering \
+    --catalog "$SCRIPTS/../references/dialects.md" --prefix RD; cov2=$?
 set -e
-if [[ $rc -eq 0 && $cov -eq 0 ]]; then echo "SKILL SELF-TEST: PASS"; exit 0; fi
-echo "SKILL SELF-TEST: FAIL (tests exit $rc, coverage exit $cov)" >&2; exit 1
+if [[ $rc -eq 0 && $py -eq 0 && $cov -eq 0 && $cov2 -eq 0 ]]; then echo "SKILL SELF-TEST: PASS"; exit 0; fi
+echo "SKILL SELF-TEST: FAIL (tests exit $rc, dialect tests $py, coverage $cov/$cov2)" >&2; exit 1
