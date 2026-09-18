@@ -60,6 +60,13 @@ const col1 = [
     ['`schema-conformance`', 'Snapshots (DDL, live PostgreSQL, Glue) → per-column EXACT / APPROVED / MISSING / CONFLICT / UNVERIFIED, dry-run fixes, reference check', '22 rules SC'],
     ['`schema-change-propagation`', 'Rename/cast templates: cast before rename, protected layers, token-aware dry-run patches, rollback', '20 rules CP'],
   ]),
+  h('Skill map — group × target (governance.md)'),
+  grid([0.20, 0.27, 0.27, 0.26], ['Target', 'Standalone SQL objects', 'SQL in Informatica ETL', 'Reporting SQL'], [
+    ['Aurora PostgreSQL', '`sql-conversion` · migration.md', '`informatica-etl-conversion --target postgres`', '`sql-reporting --target postgres` (executed)'],
+    ['Amazon Redshift', '`sql-conversion-redshift` · redshift.md', '`--target redshift` · redshift_map.json', '`sql-reporting --target redshift`'],
+    ['Iceberg on S3', '`sql-conversion-iceberg` · iceberg.md', '`--target iceberg` · S3 landing + Glue job', '`--target athena` / `spark`'],
+    ['Any', '`migration-assessment` (front door)', '`schema-conformance` · `schema-change-propagation`', 'agents: migration (1 + 3) · reporting (2)'],
+  ]),
   h('Steering (always in context)'),
   grid([0.28, 0.72], null, [
     ['`governance.md`', 'Contracts, statuses GENERATED | PARTIAL | BLOCKED | VALIDATED, stop codes, gates, skill routing, intake questions [G]'],
@@ -102,6 +109,8 @@ const col2 = [
     ['`kiro-cli chat --agent sql-reporting-agent`', '`… --agent sql-reporting-agent-windows`'],
     ['`bash supporting-files/package.sh`', '`supporting-files\\package.cmd`'],
   ]),
+  h('Run and test from Kiro'),
+  p('1 open the trusted project · 2 `run_tests.sh --skill` → RESULT: PASS · 3 `verify_agents.sh` → AGENTS: PASS · 4 `kiro-cli chat --agent sql-migration-agent` | `sql-reporting-agent` (IDE: agent selector; `/context show`) · 5 `/skill-name …` to bypass routing · 6 `audit.py tail --run <run8>` for the evidence · 7 headless: `kiro-cli chat --no-interactive --agent <agent> "<prompt>"`.', { after: 10 }),
   h('In Kiro chat'),
   grid([0.50, 0.50], null, [
     ['`Assess source/ for a BI migration; target undecided`', 'candidates + blockers, then you choose'],
@@ -109,7 +118,6 @@ const col2 = [
     ['`Convert source/schema/*.sql to Redshift with metadata/design/redshift.json`', 'Redshift DDL + ledger + package'],
     ['`Land dbo.FactSales as an Iceberg table partitioned by day(SaleDate)`', 'Athena + Spark DDL, Glue job'],
     ['`Compare source/schema with generated/schema.sql`', '`compare.md` with decisions'],
-    ['`Apply metadata/changes/q3.csv to generated/ as a dry run`', 'plan, diff, migration + rollback'],
     ['`/sql-reporting monthly revenue for 2025 on Redshift`', 'report on the stated target (function / view / temp view)'],
   ]),
   h('Statuses and stop codes'),
