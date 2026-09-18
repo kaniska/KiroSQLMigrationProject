@@ -4,11 +4,11 @@
   "target_engine": "Aurora PostgreSQL 17.7 (PL/pgSQL), schema public",
   "converter": "sql-conversion skill v3 (.kiro/skills/sql-conversion)",
   "created": "2026-09-10",
-  "last_updated": "2026-09-14",
+  "last_updated": "2026-09-18",
   "last_test_run": {
-    "date": "2026-09-14",
+    "date": "2026-09-18",
     "command": "bash supporting-files/run_tests.sh",
-    "run_id": "871771c8feda420fa1950fa978e14cbc",
+    "run_id": "844d88f6f6ce4befa79d27f2c39382b7",
     "target": "database-1.cluster-ck1imm86sh9q.us-east-1.rds.amazonaws.com / sql_migration_test (PostgreSQL 17.7)",
     "project_suites": {
       "passed": 153,
@@ -18,8 +18,8 @@
     "skill_self_tests": {
       "sql-conversion": {
         "passed": 257,
-        "migkit_unit_tests": 33,
-        "coverage": "16/16 H, 11/11 P, 86/86 CC (CC-67 manual), 13/13 SEC, 8/8 LOG, 11/11 SVC"
+        "migkit_unit_tests": 41,
+        "coverage": "16/16 H, 11/11 P, 86/86 CC (CC-67 manual), 13/13 SEC, 8/8 LOG, 11/11 SVC, 12/12 GOV"
       },
       "sql-reporting": {
         "passed": 88,
@@ -29,13 +29,33 @@
         "unit_tests": 27,
         "sql_tests": 38,
         "coverage": "42/42 IC (IC-31, IC-34 manual)"
+      },
+      "migration-assessment": {
+        "unit_tests": 12,
+        "coverage": "12/12 MA"
+      },
+      "sql-conversion-redshift": {
+        "unit_tests": 13,
+        "coverage": "52/52 RS (Data API via stub AWS CLI; live run skipped: REDSHIFT_DATABASE not set)"
+      },
+      "sql-conversion-iceberg": {
+        "unit_tests": 10,
+        "coverage": "51/51 IB (Athena via stub AWS CLI; live run skipped: ATHENA_DATABASE not set)"
+      },
+      "schema-conformance": {
+        "unit_tests": 8,
+        "coverage": "22/22 SC (incl. live Aurora snapshot compare: VALIDATED)"
+      },
+      "schema-change-propagation": {
+        "unit_tests": 9,
+        "coverage": "20/20 CP"
       }
     },
     "agent_hooks": {
-      "passed": 15,
-      "coverage": "11/11 GRD, 4/4 HOOK"
+      "passed": 18,
+      "coverage": "12/12 GRD, 5/5 HOOK"
     },
-    "passed": 611,
+    "passed": 674,
     "failed": 0,
     "errors": 0,
     "result": "ALL TESTS PASSED"
@@ -354,7 +374,12 @@
   "skills": {
     "sql-conversion": ".kiro/skills/sql-conversion — T-SQL → PL/pgSQL (17 worked examples, 87 corner cases)",
     "sql-reporting": ".kiro/skills/sql-reporting — reporting/analytics SQL on PostgreSQL (15 tested report patterns, 24 query rules)",
-    "informatica-etl-conversion": ".kiro/skills/informatica-etl-conversion — PowerCenter XML with SQL Server SQL → PostgreSQL (5 example mappings incl. a Windows-1252 real-format export, 44 corner cases incl. security/audit, 3 public exports round-tripped, infa_sql_tool.py v2 with guardrails and OpenLineage)"
+    "informatica-etl-conversion": ".kiro/skills/informatica-etl-conversion — PowerCenter XML with SQL Server SQL → PostgreSQL (5 example mappings incl. a Windows-1252 real-format export, 44 corner cases incl. security/audit, 3 public exports round-tripped, infa_sql_tool.py v2 with guardrails and OpenLineage)",
+    "migration-assessment": ".kiro/skills/migration-assessment — classify and route objects before converting (inventory, M2RVE placement, complexity, target candidates with blockers, migration-log audit; assess_tool.py, 12 rules MA)",
+    "sql-conversion-redshift": ".kiro/skills/sql-conversion-redshift — SQL Server tables, BI views, set-based loads → Amazon Redshift (redshift_tool.py: convert-ddl, check, ledger, run via Redshift Data API on test DBs, package; 5 worked pairs, 52 corner cases RS)",
+    "sql-conversion-iceberg": ".kiro/skills/sql-conversion-iceberg — SQL Server tables, loads, views → Apache Iceberg on S3 with Athena / Glue / Spark (iceberg_tool.py: ddl, check, job, ledger, run via Athena on test DBs, package; 4 worked examples, 51 corner cases IB)",
+    "schema-conformance": ".kiro/skills/schema-conformance — source vs target schema snapshots (DDL, live PostgreSQL, Glue), classification EXACT/APPROVED_TRANSFORM/MISSING_*/CONFLICT/UNVERIFIED, dry-run conformance DDL, reference validation (schema_tool.py, 22 rules SC)",
+    "schema-change-propagation": ".kiro/skills/schema-change-propagation — governed rename/cast templates through the target flow: cast-before-rename plan, protected layers, token-aware dry-run patches, rollback (change_tool.py, 20 rules CP)"
   },
   "security_and_audit": {
     "kit": ".kiro/skills/sql-conversion/scripts/migkit (security.py, audit.py, localdb.py, services.py)",
@@ -373,7 +398,38 @@
     "open_items": [
       "AWS resources for audit/lineage/guardrail/archive not created (user decision; see references/aws-services.md)",
       "AWS CLI currently uses root access keys: switch to an IAM Identity Center user or IAM role",
-      "Aurora cluster uses the default parameter group: pgaudit and log_line_prefix %a need a custom cluster parameter group"
+      "Aurora cluster uses the default parameter group: pgaudit and log_line_prefix %a need a custom cluster parameter group",
+      "Redshift / Athena test resources not configured: Redshift and Iceberg skills run statically and through the stub AWS CLI until REDSHIFT_DATABASE/REDSHIFT_WORKGROUP and ATHENA_DATABASE point at test resources (never created by the kit)",
+      "Design decisions (metadata/design/redshift.json, metadata/design/iceberg.json) and identity mappings for security-bearing views are user decisions"
+    ]
+  },
+  "governance": {
+    "steering": ".kiro/steering/governance.md",
+    "engine": ".kiro/skills/sql-conversion/scripts/migkit/contract.py (contracts, statuses, stop codes, rule ledger, validation manifest V-001..V-040, packages) + ddl.py (DDL parser)",
+    "catalog": ".kiro/skills/sql-conversion/references/governance.md (GOV-01..12)",
+    "agent": ".kiro/agents/sql-migration-agent.json routes requests after intake questions; prompts in .kiro/agents/prompts/examples.md"
+  },
+  "targets": {
+    "AuroraPostgreSQL": "primary target; project suites run on sql_migration_test",
+    "Redshift": "skill verified statically, on worked examples and through the stub AWS CLI; set REDSHIFT_DATABASE/REDSHIFT_WORKGROUP (test names) for live evidence",
+    "Iceberg": "skill verified statically, on worked examples and through the stub AWS CLI; set ATHENA_DATABASE (test names) for live evidence"
+  },
+  "schema_conformance": {
+    "source": "source/schema (T-SQL, 17 tables)",
+    "target": "generated/schema.sql (PostgreSQL) and live sql_migration_test",
+    "profile": "aurora",
+    "result": "GENERATED (DDL) / VALIDATED (live): 112 columns — 61 EXACT, 51 APPROVED_TRANSFORM, 0 MISSING, 0 CONFLICT, 0 UNVERIFIED; all references in generated/ resolve"
+  },
+  "roadmap": {
+    "next": [
+      "data validation at a consistent snapshot on all targets (V-012..V-021 executed)",
+      "Redshift Spectrum / managed Iceberg serving path, Glue Data Catalog multi-dialect views",
+      "live evidence runs on Redshift / Athena test resources"
+    ],
+    "aidlc_integration": "placeholder — map the seven gates and packages onto the AI-Driven Development Lifecycle (Inception = assessment, Construction = conversion/conformance/change units of work with the rule ledger, Operations = evidence runs); expected as .kiro/steering/aidlc.md plus a package → unit-of-work adapter; not started",
+    "later": [
+      "SQL Server stored procedures → Oracle",
+      "Informatica ETL → Redshift and Oracle"
     ]
   }
 }

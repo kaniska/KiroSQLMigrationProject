@@ -31,6 +31,8 @@
 --    the Orders row stayed committed. The PostgreSQL function is atomic
 --    (both inserts roll back together) — a deliberate, safer difference.
 -- ============================================================
+-- TODO: MANUAL REVIEW REQUIRED — intentional difference: the function is atomic while the
+--       T-SQL (no BEGIN TRAN) could leave an Orders row committed after a failed OrderLines insert
 CREATE OR REPLACE FUNCTION public.create_order(
     p_customer_id  INTEGER,
     p_product_id   INTEGER,

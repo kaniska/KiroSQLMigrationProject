@@ -1,0 +1,9 @@
+{
+  "database": "sales_lake",
+  "catalog": "glue_catalog",
+  "location_prefix": "s3://example-lake-bucket/sales_lake",
+  "tables": {
+    "dbo.DimCustomer": {"partition": [], "merge_heavy": true},
+    "dbo.FactSales":   {"partition": ["day(SaleDate)", "bucket(16, CustomerKey)"]}
+  }
+}

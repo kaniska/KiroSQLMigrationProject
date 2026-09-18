@@ -1,0 +1,7 @@
+{
+  "schema": "sales",
+  "tables": {
+    "dbo.DimCustomer": {"diststyle": "ALL", "sortkey": ["CustomerKey"]},
+    "dbo.FactSales":   {"diststyle": "KEY", "distkey": "CustomerKey", "sortkey": ["SaleDate"]}
+  }
+}

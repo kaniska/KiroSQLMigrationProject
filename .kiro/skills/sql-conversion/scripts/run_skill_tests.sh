@@ -31,6 +31,8 @@ cov=$?
 python3 "$SCRIPTS/check_rule_coverage.py" --results "$RESULTS" --no-steering \
     --catalog "$SCRIPTS/../references/security-logging.md" --prefix SEC --prefix LOG --prefix SVC
 seccov=$?
+python3 "$SCRIPTS/check_rule_coverage.py" --results "$RESULTS" --no-steering \
+    --catalog "$SCRIPTS/../references/governance.md" --prefix GOV || seccov=1
 set -e
 
 if [[ $rc -eq 0 && $cov -eq 0 && $kit -eq 0 && $seccov -eq 0 ]]; then

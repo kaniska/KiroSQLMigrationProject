@@ -20,12 +20,13 @@ privilege for the AWS credentials the session uses, and the database role withou
 | GRD-03 | Destructive commands: `rm -rf` on the workspace or key folders, `git push/reset --hard/clean -f`, `sudo`, `chmod 777`, `mkfs`, `dd` | auto |
 | GRD-04 | Tampering with guardrails, configuration or audit: shell writes/moves/deletes under `.kiro/steering|agents|skills|settings|hooks`, `logs/audit`, the session file; changing `MIGRATION_*` backends, offline mode, log dir; setting `PGTEST_ALLOW_*`; file-tool writes to those paths or `.git/` | auto |
 | GRD-05 | AWS changes: any `aws <service> create-|delete-|put-|update-|modify-|attach-|tag-|start-|stop-|invoke-|post-…`, `aws s3 cp/mv/rm/sync/mb/rb`; MCP servers asked for write mode | auto |
-| GRD-06 | Databases that are not test databases (`dbname=`, `-d`, `PGDATABASE=`, URIs) and critical SQL (`COPY … PROGRAM`, `ALTER SYSTEM`, role changes …) in psql commands or MCP queries | auto |
+| GRD-06 | Databases that are not test databases (`dbname=`, `-d`, `PGDATABASE=`, URIs) and critical SQL (`COPY … PROGRAM`, `ALTER SYSTEM`, role changes …) in psql commands or MCP queries; the same database-name rule for the skill tools that reach Amazon Redshift, Athena and Glue (`redshift_tool.py run --database`, `iceberg_tool.py run --database`, `schema_tool.py snapshot --glue --database`) | auto |
 | GRD-07 | Package installation (`pip`, `npm`, `brew`, `apt`, `gem`) — ask the user | auto |
 | GRD-08 | Starting agents with every tool trusted (`--trust-all-tools`, `/tools trust-all`) | auto |
 | GRD-09 | File writes outside the workspace | auto |
 | GRD-10 | Writing content that carries prompt injection (SEC-01), hidden characters (SEC-02) or credentials (SEC-03) | auto |
 | GRD-11 | Writing critical PostgreSQL constructs (SEC-04) into converted code (`generated/`, `source/`); tests and references may mention them | auto |
+| GRD-12 | Applying schema-change patches to a live target (`change_tool.py patch --apply`): the kit only produces dry-run packages (`PRODUCTION_WRITE_DENIED`); deployment goes through the normal release path | auto |
 
 ## Audit hooks
 

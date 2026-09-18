@@ -1,0 +1,1 @@
+{"database": "sales_lake", "location_prefix": "s3://example-lake-bucket/sales_lake", "tables": {"dbo.StoreLocation": {"partition": ["truncate(2, StoreCode)"]}}}

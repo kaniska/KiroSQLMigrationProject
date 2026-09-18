@@ -1,0 +1,9 @@
+{"provenance": {"method": "ddl-parse", "source": "flow/etl_schema.sql", "dialect": "pgsql", "sha256": "0", "capturedAt": "2026-01-01T00:00:00Z", "runId": "fixture"},
+ "hash": "fixture",
+ "tables": {"etl.asset_summary": {"schema": "etl", "name": "asset_summary", "columns": [
+   {"name": "asset_code", "ordinal": 1, "type": {"base": "integer", "length": null, "precision": null, "scale": null, "raw": "INTEGER"}, "nullable": false, "default": null, "identity": false, "computed": null, "unverified": []},
+   {"name": "asset_desc", "ordinal": 2, "type": {"base": "varchar", "length": 200, "precision": null, "scale": null, "raw": "VARCHAR(200)"}, "nullable": true, "default": null, "identity": false, "computed": null, "unverified": []},
+   {"name": "last_seen", "ordinal": 3, "type": {"base": "timestamp", "length": null, "precision": null, "scale": null, "raw": "TIMESTAMP"}, "nullable": true, "default": null, "identity": false, "computed": null, "unverified": []}],
+   "primaryKey": ["asset_code"], "unique": [], "foreignKeys": [], "checks": [], "indexes": [], "partition": [], "distribution": {}, "properties": {}, "unverified": []},
+  "src.asset": {"schema": "src", "name": "asset", "columns": [{"name": "asset_code", "ordinal": 1, "type": {"base": "integer", "length": null, "precision": null, "scale": null, "raw": "INTEGER"}, "nullable": false, "default": null, "identity": false, "computed": null, "unverified": []}],
+   "primaryKey": ["asset_code"], "unique": [], "foreignKeys": [], "checks": [], "indexes": [], "partition": [], "distribution": {}, "properties": {}, "unverified": []}}}

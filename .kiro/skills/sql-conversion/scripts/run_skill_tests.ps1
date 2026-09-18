@@ -21,6 +21,7 @@ try {
     Invoke-MigPython -ArgList @((Join-Path $Scripts 'check_rule_coverage.py'), '--results', $Results); $cov = $LASTEXITCODE
     Invoke-MigPython -ArgList @((Join-Path $Scripts 'check_rule_coverage.py'), '--results', $Results, '--no-steering',
         '--catalog', (Join-Path $Scripts '..\references\security-logging.md'), '--prefix', 'SEC', '--prefix', 'LOG', '--prefix', 'SVC'); $seccov = $LASTEXITCODE
+    Invoke-MigPython -ArgList @((Join-Path $Scripts 'check_rule_coverage.py'), '--results', $Results, '--no-steering', '--catalog', (Join-Path $Scripts '..\references\governance.md'), '--prefix', 'GOV'); if ($LASTEXITCODE -ne 0) { $seccov = 1 }
     if ($rc -eq 0 -and $cov -eq 0 -and $kit -eq 0 -and $seccov -eq 0) { Write-Host 'SKILL SELF-TEST: PASS'; exit 0 }
     [Console]::Error.WriteLine("SKILL SELF-TEST: FAIL (tests exit $rc, coverage exit $cov, migkit exit $kit, security coverage exit $seccov)")
     exit 1

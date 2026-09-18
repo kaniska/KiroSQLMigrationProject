@@ -86,14 +86,14 @@ const numberingConfigs = [
 const body = [
   new Paragraph({ children: [new TextRun({ text: 'SQL Server → Aurora PostgreSQL', font: FONT, size: 44, bold: true, color: ACCENT })], spacing: { after: 60 } }),
   new Paragraph({ children: [new TextRun({ text: 'Migration with Kiro — User Guide', font: FONT, size: 32, color: '404040' })], spacing: { after: 80 } }),
-  new Paragraph({ children: [t('skills: sql-conversion · sql-reporting · informatica-etl-conversion · sql-migration-agent · September 2026', { size: 20, color: '707070' })],
+  new Paragraph({ children: [t('eight skills · targets: Aurora PostgreSQL · Amazon Redshift · Iceberg on S3 · sql-migration-agent · September 2026', { size: 20, color: '707070' })],
     border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: ACCENT, space: 6 } }, spacing: { after: 240 } }),
 
   h1('1. What it does'),
-  p('This kit lets Kiro move a SQL Server estate to PostgreSQL on Amazon Aurora: it converts database code (stored procedures, functions, triggers, table definitions), writes the reports that run on the converted data, and migrates Informatica ETL exports — and **proves** every result with automatic tests.'),
-  bullet('**Rules** tell Kiro what a correct conversion looks like (`.kiro/steering/migration.md`).'),
-  bullet('**Three skills** tell Kiro how to do one unit of work and test it: `sql-conversion` (T-SQL → PostgreSQL), `sql-reporting` (report and dashboard SQL), `informatica-etl-conversion` (PowerCenter XML).'),
-  bullet('**The agent** runs the whole job for you, with safe permissions (`.kiro/agents/sql-migration-agent.json`).'),
+  p('This kit lets Kiro move a SQL Server estate to its approved targets — PostgreSQL on Amazon Aurora for database code, Amazon Redshift for the warehouse, Apache Iceberg tables on S3 (Athena, Glue, Spark) for the data lake: it assesses and routes each object, converts code and table definitions, writes the reports that run on the converted data, migrates Informatica ETL exports, checks that source and target schemas match, and applies rename/cast requests safely — and **proves** every result with automatic tests or a run on a test target.'),
+  bullet('**Rules** tell Kiro what a correct conversion looks like: `governance.md` (contracts, statuses, stop codes, which skill), `migration.md` (PostgreSQL), `redshift.md`, `iceberg.md`, `schema.md`, `security.md`.'),
+  bullet('**Eight skills** tell Kiro how to do one unit of work and prove it: `migration-assessment` (what is it, where should it go), `sql-conversion` (T-SQL → PostgreSQL), `sql-conversion-redshift`, `sql-conversion-iceberg`, `sql-reporting` (report and dashboard SQL), `informatica-etl-conversion` (PowerCenter XML), `schema-conformance` (source vs target schema), `schema-change-propagation` (renames and casts).'),
+  bullet('**The agent** asks a few intake questions (consumer, approved target, contract, metadata, security, test target), picks the skill and runs the job with safe permissions (`.kiro/agents/sql-migration-agent.json`; prompts in `.kiro/agents/prompts/examples.md`).'),
   note('Golden rule: the new code must behave exactly like the old code — even where the old code has a bug. Kiro keeps the behaviour and flags it for you to decide.'),
 
   h1('2. What you need'),
@@ -117,7 +117,7 @@ const body = [
   p('On **Windows** run `supporting-files\\run_tests.cmd` instead, and use the agent `sql-migration-agent-windows`. Every `.sh` script has a `.cmd` launcher next to it that takes the same arguments.'),
   ...steps([
     'Using **Kiro Crew**? Open the Crew dashboard and grant this folder **trust**, so the project skills load.',
-    'Optional: install `uv` (`brew install uv`) if you want the MCP servers described in section 10.',
+    'Optional: install `uv` (`brew install uv`) if you want the MCP servers described in section 11.',
   ], 'steps0'),
 
   h1('4. Convert a procedure'),
@@ -217,21 +217,36 @@ const body = [
   p('Real PowerCenter exports are usually **Windows-1252 or ISO-8859-1**, with Windows line breaks and `NAME ="…"` spacing. The tool keeps all of that, so an unchanged file comes back byte for byte (checked on public exports from GitHub). If the export contains text aimed at an AI, hidden characters or passwords, they are listed in `manifest.json` under `security`. Kiro reports them to you and never follows them.'),
   p('Test the skill: `bash .kiro/skills/informatica-etl-conversion/scripts/run_skill_tests.sh` (5 example mappings — one in real export format with a full SQL Server job — and 44 corner cases, including security and audit).'),
 
-  h1('8. Check the result'),
+  h1('8. Choose the target: assess, Redshift, Iceberg, schema checks, schema changes'),
+  p('When the target is not Aurora — or not decided yet — start by asking the agent to **assess**. It inventories every object, says who consumes it, where it should live (Materialize the Middle, Retain Views on the Edge), how complex it is, which targets are feasible and which skill converts it. Missing decisions come back as questions, never as guesses.'),
+  table([3300, 5726], ['You type', 'What you get'], [
+    ['`Assess source/ for a BI migration; target undecided`', 'per object: role, complexity L1–L4, review tier, target candidates with blockers, recommended skill; `generated/assessment/*.assessment.md`'],
+    ['`Convert source/schema/*.sql to Redshift with metadata/design/redshift.json`', 'Redshift DDL with your DISTSTYLE/SORTKEY decisions (AUTO when you gave none), informational keys, a rule ledger, a package'],
+    ['`Rewrite v_CustomerSummary as a Redshift late-binding view`', 'converted view, `check` with 0 problems, ledger (ISNULL → NVL, STRING_AGG → LISTAGG …), optional run on a test workgroup'],
+    ['`Land dbo.FactSales as an Iceberg table partitioned by day(SaleDate)`', 'Athena and Spark DDL (`string` with source lengths in comments), partition transforms from your design file, S3 location from the design file'],
+    ['`Generate the Glue MERGE job for customer_summary keyed on customer_key`', 'a Glue 5.x PySpark job rendered from a template: deduplicated source, idempotent MERGE, audit counts; compiled and security-scanned'],
+    ['`Compare source/schema with generated/schema.sql`', '`compare.md`: every column EXACT / APPROVED_TRANSFORM / MISSING / CONFLICT / UNVERIFIED, keys, column order; dry-run fix proposals'],
+    ['`Apply metadata/changes/q3.csv to generated/ as a dry run`', 'cast-before-rename plan, diff of the editable files only, migration and rollback scripts, residual scan, cast-safety findings for review'],
+  ]),
+  note('Design decisions are yours: distribution and sort keys, partition transforms, S3 locations, identity mappings for security views, dispositions for risky casts. The tools emit AUTO or placeholders and mark the result PARTIAL until you decide; nothing is applied to a live target and no AWS resource is ever created by the kit.'),
+  p('Redshift and Athena runs (`run`) only work against databases whose name contains `test`, `dev`, `sandbox` or `local`, and only when you have configured them (`REDSHIFT_DATABASE` + `REDSHIFT_WORKGROUP`, `ATHENA_DATABASE`). Without them the skills still convert, check and package; the execution check is listed as not executed.'),
+  p('Test the skills: `bash .kiro/skills/<skill>/scripts/run_skill_tests.sh` (Windows: `.cmd`) for `migration-assessment`, `sql-conversion-redshift`, `sql-conversion-iceberg`, `schema-conformance`, `schema-change-propagation` — no database needed.'),
+
+  h1('9. Check the result'),
   cmd('bash supporting-files/run_tests.sh'),
   p('You will see a summary per test group, a list of failures (empty when all is well), and:'),
   table([3300, 5726], ['Line', 'Meaning'], [
     ['`Project suites : PASS`', 'Your converted code behaves as expected.'],
-    ['`Skill self-tests: PASS`', 'All three skills\' examples and corner cases still work on your database.'],
+    ['`Skill self-tests: PASS`', 'All eight skills\' examples and corner cases still work (five of them need no database).'],
     ['`Agent hooks    : PASS`', 'The agent guardrails block what they should and the audit hooks work.'],
     ['`COVERAGE: PASS`', 'Every rule in the rulebook has at least one test.'],
-    ['`Run id         : 8717…`', 'The id of this run. Find everything it did with `audit.py tail --run 8717…` (section 10).'],
+    ['`Run id         : 8717…`', 'The id of this run. Find everything it did with `audit.py tail --run 8717…` (section 11).'],
     ['`RESULT: PASS`', 'Everything above passed. Anything else: read the failures table.'],
   ]),
   gap(),
   p('A failing test name ends with a tag such as `[P4]` or `[CC-43]`. Look it up in `.kiro/steering/migration.md` (P/H rules) or `.kiro/skills/sql-conversion/references/corner-cases.md` (CC cases) to see the rule it checks.'),
 
-  h1('9. Review the flags'),
+  h1('10. Review the flags'),
   p('Some differences need a human decision. Kiro never hides them: the code says `-- TODO: MANUAL REVIEW REQUIRED — <reason>` and `metadata/migration_log.json` says `"manual_review": true`.'),
   table([3600, 5426], ['Flag', 'Your decision'], [
     ['Source bug preserved (e.g. expired coupon accepted)', 'Keep for parity during cut-over, or fix in both systems.'],
@@ -241,7 +256,7 @@ const body = [
   ]),
   gap(),
 
-  h1('10. Stay safe: guardrails, audit trail, AWS'),
+  h1('11. Stay safe: guardrails, audit trail, AWS'),
   p('Source files and XML exports are **untrusted**. They could contain text written to trick an AI (“ignore your instructions and…”). The kit does not rely on Kiro noticing: fixed checks run outside the model.'),
   table([3000, 6026], ['Protection', 'What it does'], [
     ['Input scan', 'Finds instructions aimed at an AI, invisible characters, passwords and keys, and dangerous SQL in any file: `security.py scan <file>`.'],
@@ -268,7 +283,7 @@ const body = [
   cmd('python3 .kiro/skills/sql-conversion/scripts/migkit/services.py status'),
   note('Kiro never creates AWS resources for you, and never use AWS root access keys for this work. Use an IAM Identity Center user or an IAM role.'),
 
-  h1('11. Kiro CLI commands'),
+  h1('12. Kiro CLI commands'),
   p('Commands checked against Kiro CLI 2.21. Terminal commands start with `kiro-cli`; chat commands start with `/` and are typed inside `kiro-cli chat`.'),
   h2('Skills'),
   table([4300, 4726], ['Task', 'Command'], [
@@ -314,7 +329,7 @@ const body = [
   ]),
   note('Security: keep servers read-only; never put passwords in mcp.json; do not install the package "awslabs.aws-dms-mcp-server" — it is not from AWS.'),
 
-  h1('12. Use the kit in another project'),
+  h1('13. Use the kit in another project'),
   ...steps([
     'Copy `.kiro/steering/migration.md` and the folder `.kiro/skills/sql-conversion/` (and `.kiro/agents/` for the agent).',
     'Write `.kiro/steering/project.md` for the new project: target version, folders, test command.',
@@ -324,7 +339,7 @@ const body = [
   cmd('  bash .kiro/skills/sql-conversion/scripts/run_skill_tests.sh'),
   ...steps(['Start converting (sections 4, 6, 7). Copy `tests/test_runner.sql` as the template for your own test list.'], 'steps2'),
 
-  h1('13. Troubleshooting'),
+  h1('14. Troubleshooting'),
   table([3700, 5326], ['You see', 'Do this'], [
     ['REFUSING TO RUN … not a test database', 'Connect to a database whose name contains test / dev / sandbox / local.'],
     ['could not generate an IAM auth token', 'Run `aws sts get-caller-identity`; your AWS user needs `rds-db:connect`.'],
@@ -340,8 +355,8 @@ const body = [
   ]),
   gap(),
 
-  h1('14. Open items (to do)'),
-  p('These items are known and documented. None of them stops the tests from passing today. Details and commands: `README.md` section 14.'),
+  h1('15. Open items (to do)'),
+  p('These items are known and documented. None of them stops the tests from passing today. Details and commands: `README.md` section 15.'),
   table([2600, 6426], ['Area', 'To do'], [
     ['AWS access', 'Stop using root access keys. Create an IAM Identity Center user or IAM role with the least-privilege policy in `references/aws-services.md`.'],
     ['AWS services', 'Create the KMS key, CloudWatch Logs group, Bedrock guardrail, S3 Object Lock bucket and DataZone domain (Secrets Manager and CloudTrail only if needed). Then fill in `.kiro/settings/migration-services.json` and run `services.py sync`.'],
@@ -349,11 +364,13 @@ const body = [
     ['Business decisions', 'Six flagged objects: two end-of-month/end-date report quirks, the expired-coupon bug, two procedures split into two functions, and the atomic `create_order`. Keep or fix each one in both systems.'],
     ['After the data load', 'Resync identity sequences with `setval`.'],
     ['Informatica', 'Create PostgreSQL connection objects with the same names, re-validate mappings and sessions, run one test session. Verify for your PowerCenter version: Stored Procedure transformations over ODBC, the PostgreSQL `DATABASETYPE` value, which run-id variables expand in Pre/Post SQL. Enable high precision for decimals above 28 digits.'],
-    ['Kit', 'Build the planned `schema-validation` and `metadata-validation` skills. Enable the MCP servers when wanted. Move hooks to `.kiro/hooks/` when upgrading to Kiro CLI 3.0. Upgrade Python (Expat 2.7.2+).'],
+    ['Redshift and Iceberg', 'Point `REDSHIFT_DATABASE`/`REDSHIFT_WORKGROUP` and `ATHENA_DATABASE` at test resources for live evidence runs (the kit never creates them). Fill `metadata/design/redshift.json` and `metadata/design/iceberg.json` with your distribution, sort and partition decisions. Approve identity mappings for security views before attaching RLS policies.'],
+    ['Kit', 'Enable the MCP servers when wanted. Move hooks to `.kiro/hooks/` when upgrading to Kiro CLI 3.0. Upgrade Python (Expat 2.7.2+).'],
+    ['Roadmap', '**Next:** data validation at a snapshot (row counts, key sets, checksums) on all targets; Redshift Spectrum / managed Iceberg as a serving path. **AI-DLC integration (placeholder):** map the kit\'s gates and packages onto the AI-Driven Development Lifecycle (Inception = assessment, Construction = conversion units of work with the rule ledger, Operations = evidence runs) as steering plus a package adapter. **Later:** Oracle targets, Informatica ETL to Redshift/Oracle.'],
   ]),
   gap(),
 
-  h1('15. Quick reference'),
+  h1('16. Quick reference'),
   table([4600, 4426], ['Task', 'Command'], [
     ['Run everything', '`bash supporting-files/run_tests.sh`  ·  Windows: `supporting-files\\run_tests.cmd`'],
     ['Only your conversions / only the skill', '`bash supporting-files/run_tests.sh --project`  ·  `--skill`'],
@@ -366,6 +383,9 @@ const body = [
     ['Convert one file (in chat)', '`/sql-conversion source/usp_X.sql`'],
     ['Write a report (in chat)', '`/sql-reporting monthly revenue by category for 2025`'],
     ['Convert Informatica XML (in chat)', '`/informatica-etl-conversion source/informatica/wf_x.xml`'],
+    ['Assess and route objects (in chat)', '`/migration-assessment assess source/ for a BI migration`'],
+    ['Convert to Redshift / Iceberg (in chat)', '`/sql-conversion-redshift source/schema/x.sql`  ·  `/sql-conversion-iceberg source/schema/x.sql`'],
+    ['Compare schemas / apply a change template (in chat)', '`/schema-conformance compare source/schema with generated/schema.sql`  ·  `/schema-change-propagation metadata/changes/x.csv`'],
     ['Convert all pending files', '`bash supporting-files/kiro_migrate.sh`'],
     ['Scan a file before converting', '`python3 .kiro/skills/sql-conversion/scripts/migkit/security.py scan <file>`'],
     ['Where do logs go (AWS or local)?', '`python3 .kiro/skills/sql-conversion/scripts/migkit/services.py status`'],

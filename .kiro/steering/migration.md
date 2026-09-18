@@ -17,12 +17,19 @@ Project specifics (target version, paths, test command, connections) live in
 | `.kiro/skills/sql-conversion/SKILL.md` | active | converting T-SQL to PL/pgSQL, fixing or reviewing a conversion |
 | `.kiro/skills/sql-reporting/SKILL.md` | active | writing, reviewing and testing reporting / analytics SQL on PostgreSQL (rules `RQ-nn`, patterns `RP-nn`) |
 | `.kiro/skills/informatica-etl-conversion/SKILL.md` | active | Informatica PowerCenter XML with SQL Server SQL → PostgreSQL (steering `informatica-etl.md`, corner cases `IC-nn`) |
-| `.kiro/skills/schema-validation/SKILL.md` | planned | validating converted DDL and references |
-| `.kiro/skills/metadata-validation/SKILL.md` | planned | auditing the migration log |
+| `.kiro/skills/migration-assessment/SKILL.md` | active | classify, place and route objects before converting; target candidates; migration-log audit (`MA-nn`, steering `governance.md`) |
+| `.kiro/skills/sql-conversion-redshift/SKILL.md` | active | SQL Server objects → Amazon Redshift (steering `redshift.md`, corner cases `RS-nn`) |
+| `.kiro/skills/sql-conversion-iceberg/SKILL.md` | active | SQL Server tables and loads → Apache Iceberg on S3 with Athena / Glue / Spark (steering `iceberg.md`, corner cases `IB-nn`) |
+| `.kiro/skills/schema-conformance/SKILL.md` | active | source-vs-target schema gap analysis and conformance, reference validation (steering `schema.md`, rules `SC-nn`) |
+| `.kiro/skills/schema-change-propagation/SKILL.md` | active | governed table/column renames and casts through the target flow (rules `CP-nn`) |
 
-**For any conversion task follow `.kiro/skills/sql-conversion/SKILL.md`; for report or
+**When the target is undecided, or the object is a view chain, a data-moving procedure or
+security-bearing SQL, start with `.kiro/skills/migration-assessment/SKILL.md`. For any
+PostgreSQL conversion task follow `.kiro/skills/sql-conversion/SKILL.md`; for Amazon Redshift
+`sql-conversion-redshift`; for Iceberg / Athena / Glue `sql-conversion-iceberg`; for report or
 analytics SQL follow `.kiro/skills/sql-reporting/SKILL.md`; for Informatica exports follow
-`.kiro/skills/informatica-etl-conversion/SKILL.md`. If the skill was not activated
+`.kiro/skills/informatica-etl-conversion/SKILL.md`; for schema comparison `schema-conformance`;
+for rename/cast change requests `schema-change-propagation`. If the skill was not activated
 automatically, read that file before writing code.**
 
 Rule IDs (`[H1]`, `[P4]`) and corner-case IDs (`[CC-43]`, catalogued in

@@ -70,6 +70,7 @@ SECRET_RES = [
     ("sql-login-password", re.compile(r"(?i)\b(CREATE|ALTER)\s+(LOGIN|USER|ROLE)\b[^;\n]{0,120}\bPASSWORD\s*=?\s*'[^']+'"), "critical"),
     ("informatica-password-attribute", re.compile(r"(?i)NAME\s*=\s*\"[^\"]*pass(word)?[^\"]*\"\s+VALUE\s*=\s*\"(?!\s*\"|\$)[^\"]+\""), "critical"),
     ("prm-password", re.compile(r"(?im)^\s*\$\$?[A-Za-z_]*pass(word)?[A-Za-z_]*\s*=\s*(?!\s*$)(?!\$)\S+"), "critical"),
+    ("redshift-inline-credentials", re.compile(r"(?i)\b(CREDENTIALS|ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN)\s*(AS\s*)?'[^']{8,}'"), "critical"),
 ]
 
 # ---------------------------------------------------------------- SEC-04 dangerous PostgreSQL
@@ -91,6 +92,12 @@ PG_DANGER = [
     ("owner-change", r"\bALTER\s+(TABLE|FUNCTION|PROCEDURE|SCHEMA|DATABASE|VIEW|SEQUENCE)\b[^;]{0,200}\bOWNER\s+TO\b", "high", "ownership change"),
     ("event-trigger", r"\bCREATE\s+EVENT\s+TRIGGER\b", "high", "event trigger (runs on DDL of every user)"),
     ("disable-row-security", r"\bSET\s+row_security\s*=\s*off\b|\bALTER\s+TABLE\b[^;]{0,120}\b(DISABLE|NO\s+FORCE)\s+ROW\s+LEVEL\s+SECURITY\b", "high", "row-level security disabled"),
+    # Amazon Redshift / Athena / Spark surfaces (data movement out of the warehouse, identity changes, external code)
+    ("unload-to-s3", r"\bUNLOAD\s*\(", "high", "UNLOAD exports query results to S3 — confirm the destination bucket and the IAM role"),
+    ("copy-from-s3", r"\bCOPY\s+[\w.\"]+\s+FROM\s+'s3://", "high", "COPY loads from S3 — confirm the source bucket and the IAM role; never inline credentials"),
+    ("external-schema-or-function", r"\bCREATE\s+EXTERNAL\s+(SCHEMA|FUNCTION)\b", "high", "external schema / Lambda UDF reaches outside the warehouse"),
+    ("redshift-user-password", r"\b(CREATE|ALTER)\s+USER\b[^;]{0,120}\bPASSWORD\b", "critical", "user/password management in migration code"),
+    ("spark-shell-or-fs", r"\bsubprocess\.|\bos\.system\(|\bboto3\.client\(['\"](iam|sts|secretsmanager)['\"]\)", "high", "generated job reaches the OS or identity services"),
 ]
 PG_DANGER_RES = [(n, re.compile(p, re.I | re.S), sev, why) for n, p, sev, why in PG_DANGER]
 

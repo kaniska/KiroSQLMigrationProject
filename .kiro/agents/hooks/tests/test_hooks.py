@@ -68,7 +68,13 @@ class GuardTests(HookBase):
                     "python3 .kiro/skills/informatica-etl-conversion/scripts/infa_sql_tool.py extract source/informatica/wf.xml generated/informatica/wf.sql",
                     "python3 .kiro/skills/sql-conversion/scripts/migkit/services.py status", "python3 .kiro/skills/sql-conversion/scripts/migkit/audit.py tail -n 20",
                     "aws rds describe-db-clusters --region us-east-1", "aws sts get-caller-identity", "aws rds generate-db-auth-token --hostname h --port 5432 --username u",
-                    "psql \"host=h dbname=sql_migration_test user=migration_agent\" -c 'select 1'", "git status", "set -euo pipefail; ls generated", "rm -rf generated/tmp_render", "rm -f generated/old.sql"]:
+                    "psql \"host=h dbname=sql_migration_test user=migration_agent\" -c 'select 1'", "git status", "set -euo pipefail; ls generated", "rm -rf generated/tmp_render", "rm -f generated/old.sql",
+                    "python3 .kiro/skills/migration-assessment/scripts/assess_tool.py assess source --consumer bi --out generated/assessment",
+                    "python3 .kiro/skills/sql-conversion-redshift/scripts/redshift_tool.py run generated/redshift/v.sql --database dw_test --workgroup-name wg",
+                    "python3 .kiro/skills/sql-conversion-iceberg/scripts/iceberg_tool.py run generated/iceberg/t.athena.sql --database lake_dev --workgroup primary",
+                    "python3 .kiro/skills/schema-conformance/scripts/schema_tool.py snapshot --glue --database sales_lake_dev --out generated/schema/g.json",
+                    "python3 .kiro/skills/schema-change-propagation/scripts/change_tool.py patch generated/changes/plan.json --flow generated --out generated/changes/patches",
+                    "bash .kiro/skills/schema-conformance/scripts/run_skill_tests.sh"]:
             self.assertAllowed("execute_bash", self.sh(cmd))
         self.assertAllowed("fs_write", {"command": "create", "path": "generated/usp_x.sql", "file_text": "CREATE FUNCTION public.f() RETURNS int LANGUAGE sql AS 'select 1';"})
         self.assertAllowed("fs_read", {"operations": [{"mode": "Line", "path": "source/usp_x.sql"}]})
@@ -120,6 +126,15 @@ class GuardTests(HookBase):
                     "psql -d sql_migration_test -c 'ALTER SYSTEM SET log_statement = none'"]:
             self.assertBlocked("execute_bash", self.sh(cmd), "GRD-06")
         self.assertBlocked("@awslabs.postgres-mcp-server/run_query", {"sql": "SELECT pg_read_file('/etc/passwd')"}, "GRD-06")
+        for cmd in ["python3 .kiro/skills/sql-conversion-redshift/scripts/redshift_tool.py run generated/redshift/v.sql --database analytics_prod --workgroup-name wg",
+                    "python3 .kiro/skills/sql-conversion-iceberg/scripts/iceberg_tool.py run x.sql --workgroup primary --database=sales_lake",
+                    "python3 .kiro/skills/schema-conformance/scripts/schema_tool.py snapshot --glue --database lakehouse --out g.json"]:
+            self.assertBlocked("execute_bash", self.sh(cmd), "GRD-06")
+
+    def test_grd12_change_apply(self):
+        """HK-G13 applying schema-change patches to a live target is blocked; dry-run patching stays allowed [GRD-12]"""
+        self.assertBlocked("execute_bash", self.sh("python3 .kiro/skills/schema-change-propagation/scripts/change_tool.py patch plan.json --flow generated --out p --apply"), "GRD-12")
+        self.assertAllowed("execute_bash", self.sh("python3 .kiro/skills/schema-change-propagation/scripts/change_tool.py patch plan.json --flow generated --out p"))
 
     def test_grd07_grd08_installs_and_trust_all(self):
         """HK-G07 package installation and trust-all agent sessions are blocked [GRD-07] [GRD-08]"""

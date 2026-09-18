@@ -51,6 +51,29 @@ elif (svc, op) == ("s3api", "put-object"):
     out = {"ETag": "\"abc\"", "ChecksumSHA256": "x"}
 elif (svc, op) == ("secretsmanager", "describe-secret"):
     out = {"Name": arg("--secret-id")}
+elif (svc, op) == ("redshift-data", "batch-execute-statement") or (svc, op) == ("redshift-data", "execute-statement"):
+    out = {"Id": "stmt-0001", "Database": arg("--database"), "WorkgroupName": arg("--workgroup-name"), "CreatedAt": "2026-09-18T00:00:00Z"}
+elif (svc, op) == ("redshift-data", "describe-statement"):
+    fail = os.environ.get("STUB_REDSHIFT_FAIL")
+    out = {"Id": arg("--id"), "Status": "FAILED" if fail else "FINISHED", "Error": fail or None, "ResultRows": 1, "Duration": 1200000,
+           "SubStatements": [{"Id": arg("--id") + ":1", "Status": "FAILED" if fail else "FINISHED", "Error": fail}]}
+elif (svc, op) == ("redshift-data", "get-statement-result"):
+    out = {"ColumnMetadata": [{"name": "ok"}], "Records": [[{"longValue": 1}]], "TotalNumRows": 1}
+elif (svc, op) == ("athena", "start-query-execution"):
+    out = {"QueryExecutionId": "qe-0001"}
+elif (svc, op) == ("athena", "get-query-execution"):
+    fail = os.environ.get("STUB_ATHENA_FAIL")
+    out = {"QueryExecution": {"QueryExecutionId": arg("--query-execution-id"), "Status": {"State": "FAILED" if fail else "SUCCEEDED", "StateChangeReason": fail},
+                              "Statistics": {"DataScannedInBytes": 1024, "EngineExecutionTimeInMillis": 350}}}
+elif (svc, op) == ("athena", "get-query-results"):
+    out = {"ResultSet": {"Rows": [{"Data": [{"VarCharValue": "ok"}]}, {"Data": [{"VarCharValue": "1"}]}]}}
+elif (svc, op) == ("glue", "get-tables"):
+    out = {"TableList": [{"Name": "order_lines", "DatabaseName": arg("--database-name"), "Parameters": {"table_type": "ICEBERG", "format": "parquet"},
+                          "PartitionKeys": [], "StorageDescriptor": {"Columns": [{"Name": "order_line_id", "Type": "bigint"}, {"Name": "order_id", "Type": "int"},
+                          {"Name": "quantity", "Type": "int"}, {"Name": "unit_price", "Type": "decimal(19,4)"}, {"Name": "note", "Type": "string"}, {"Name": "_run_id", "Type": "string"}]}}]}
+elif (svc, op) == ("glue", "get-table"):
+    out = {"Table": {"Name": arg("--name"), "DatabaseName": arg("--database-name"), "Parameters": {"table_type": "ICEBERG"},
+                     "StorageDescriptor": {"Columns": [{"Name": "order_id", "Type": "bigint"}, {"Name": "created_at", "Type": "timestamp"}, {"Name": "status", "Type": "string"}]}}}
 elif (svc, op) == ("secretsmanager", "get-secret-value"):
     print(json.dumps(json.dumps({"username": "etl_reader", "password": "Sup3rS3cret!", "host": "db.example.internal", "port": 5432, "dbname": "sales_test"})))
     sys.exit(0)

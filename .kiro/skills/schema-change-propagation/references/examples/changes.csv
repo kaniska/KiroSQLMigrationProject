@@ -1,0 +1,6 @@
+Change_Type, Current_Schema ,Current_Table,Current_Column,Current_Datatype,New_Schema,New_Table,New_Column,New_Datatype,Layer,Justification
+RENAME_TABLE,etl,asset_summary,,,,asset_summary_v2,,,target,consolidated summary table
+CAST_COLUMN,etl,asset_summary,asset_code,,,,,BIGINT,target,codes are numeric and outgrow INTEGER
+RENAME_COLUMN,etl,asset_summary,asset_code,,,,asset_id,,target,align with the consumer contract
+CAST_COLUMN,etl,asset_summary,asset_desc,VARCHAR(200),,,,INTEGER,target,legacy request (suspicious)
+RENAME_COLUMN,ETL,asset_summary,last_seen,TIMESTAMP,,,last_seen_at,,target,naming policy

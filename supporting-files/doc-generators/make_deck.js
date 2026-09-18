@@ -31,7 +31,7 @@ const W = 13.333, H = 7.5;
 const pres = new pptxgen();
 pres.layout = 'LAYOUT_WIDE';
 pres.author = 'SQLMigrationProject';
-pres.title = 'SQL Server to Aurora PostgreSQL with Kiro — Executive Overview';
+pres.title = 'SQL Server to Aurora PostgreSQL, Amazon Redshift and Iceberg with Kiro — Executive Overview';
 
 // ---------- helpers ----------
 const shadow = () => ({ type: 'outer', color: '000000', blur: 6, offset: 2, angle: 90, opacity: 0.18 });
@@ -99,7 +99,7 @@ slides.push((s) => {
 // 2 — Why & what
 slides.push((s, n) => {
   s.background = { color: C.paper };
-  title(s, 'What the kit delivers', 'Three migration workstreams, one method: convert faithfully, prove on a real database, record everything');
+  title(s, 'What the kit delivers', 'Three workstreams and three targets (Aurora · Redshift · Iceberg on S3), one method: convert faithfully, prove it, record everything');
   const cols = [
     ['Database code', 'T-SQL procedures, functions, triggers and DDL → PL/pgSQL', '19 routines + 17 tables converted\n6 business decisions flagged, none hidden', C.teal],
     ['Reports & analytics', 'Report and dashboard SQL on the converted schema', '15 tested report patterns\n24 query-correctness rules', C.violet],
@@ -235,9 +235,9 @@ slides.push((s, n) => {
     });
     s.addText(foot, { x: x + 0.25, y: y + 3.95, w: 3.35, h: 0.4, fontFace: BF, fontSize: 11, italic: true, color: C.muted, margin: 0, isTextBox: true });
   });
-  chip(s, 0.6, 6.5, 2.6, 'planned: schema-validation', { fill: C.mist, size: 11 });
-  chip(s, 3.35, 6.5, 2.8, 'planned: metadata-validation', { fill: C.mist, size: 11 });
-  s.addText('Kiro loads a skill when the request matches its description, or on /skill-name.', { x: 6.4, y: 6.5, w: 6.3, h: 0.34, fontFace: BF, fontSize: 12, color: C.muted, valign: 'middle', margin: 0, isTextBox: true });
+  ['migration-assessment · MA-12', 'sql-conversion-redshift · RS-52', 'sql-conversion-iceberg · IB-51', 'schema-conformance · SC-22', 'schema-change-propagation · CP-20'].forEach((t, i) =>
+    chip(s, 0.6 + i * 2.45, 6.45, 2.35, t, { fill: C.petrol, color: C.paper, size: 10.5, h: 0.34 }));
+  s.addText('+ five skills (Sept 2026) on the same engine: assessment, Redshift, Iceberg on S3, schema conformance, change propagation. Kiro loads a skill when the request matches its description, or on /skill-name.', { x: 0.6, y: 6.85, w: 12.1, h: 0.3, fontFace: BF, fontSize: 10.5, color: C.muted, valign: 'middle', margin: 0, isTextBox: true });
   footer(s, n);
 });
 
@@ -398,13 +398,13 @@ slides.push((s, n) => {
 // 12 — Tests: numbers
 slides.push((s, n) => {
   s.background = { color: C.paper };
-  title(s, 'Proof: 611 automated checks, one gate', 'Latest full run on Aurora PostgreSQL 17.7 — 0 failures, every catalog rule covered');
-  s.addChart(pres.charts.BAR, [{ name: 'Checks', labels: ['Project suites', 'sql-conversion (SQL)', 'sql-reporting (SQL)', 'Informatica (SQL)', 'migkit (unit)', 'Informatica tool (unit)', 'Agent hooks'], values: [153, 257, 88, 38, 33, 27, 15] }], {
+  title(s, 'Proof: 674 automated checks, one gate', 'Latest full run on Aurora PostgreSQL 17.7 — 0 failures, every catalog rule covered');
+  s.addChart(pres.charts.BAR, [{ name: 'Checks', labels: ['Project suites', 'sql-conversion (SQL)', 'sql-reporting (SQL)', 'Informatica (SQL)', 'migkit + governance (unit)', 'Informatica tool (unit)', 'Assessment · Redshift · Iceberg · schema · change (unit)', 'Agent hooks'], values: [153, 257, 88, 38, 41, 27, 52, 18] }], {
     x: 0.6, y: 1.65, w: 7.3, h: 5.1, barDir: 'bar', chartColors: [C.teal], showValue: true, dataLabelPosition: 'outEnd', dataLabelColor: C.ink, dataLabelFontSize: 12,
     catAxisLabelColor: C.text, catAxisLabelFontSize: 12, valAxisLabelColor: C.muted, valAxisLabelFontSize: 10, valGridLine: { color: 'E3E8EA', size: 0.5 }, catGridLine: { style: 'none' },
     showLegend: false, showTitle: true, title: 'Automated checks by layer', titleFontSize: 14, titleColor: C.ink, catAxisOrientation: 'maxMin',
   });
-  const cov = [['H · P · CC', '27 rules · 86 corner cases'], ['RQ · RP', '23 rules · 15 patterns'], ['IC', '42 corner cases'], ['SEC · LOG · SVC', '13 · 8 · 11 controls'], ['GRD · HOOK', '11 guardrails · 4 hooks']];
+  const cov = [['H · P · CC', '27 rules · 86 corner cases'], ['RQ · RP · IC', '23 rules · 15 patterns · 42 cases'], ['SEC · LOG · SVC · GOV', '13 · 8 · 11 · 12 controls'], ['MA · RS · IB · SC · CP', '12 · 52 · 51 · 22 · 20 rules'], ['GRD · HOOK', '12 guardrails · 5 hooks']];
   s.addText('Coverage gate: no rule without a test', { x: 8.3, y: 1.8, w: 4.45, h: 0.45, fontFace: HF, fontSize: 15, bold: true, color: C.ink, margin: 0, isTextBox: true });
   cov.forEach(([h, b], i) => {
     const y = 2.4 + i * 0.85;
@@ -451,19 +451,19 @@ slides.push((s, n) => {
   title(s, 'Roadmap: from one migration path to a migration platform', 'Every new skill reuses the same agent, guardrails, audit, test engine and coverage gate');
   const cols = [
     ['Delivered', C.green, C.greenSoft, [
-      ['SQL Server → Aurora PostgreSQL', 'stored procedures, functions, triggers, DDL'],
-      ['Reporting & analytics SQL', '15 patterns · 24 correctness rules'],
-      ['Informatica ETL + SQL Server SQL → PostgreSQL', 'real export format, lineage'],
+      ['SQL Server → Aurora PostgreSQL · reports · Informatica', 'procedures, functions, triggers, DDL · 15 report patterns · PowerCenter XML'],
+      ['Assessment + Redshift + Iceberg on S3', 'placement (M2RVE), warehouse DDL/views/procedures, lake tables, Athena views, Glue jobs'],
+      ['Schema conformance + change propagation', 'hashed snapshots, per-column classification, cast-before-rename dry-run packages'],
     ]],
     ['Next', C.teal, C.mist, [
-      ['Schema mismatch detection', 'source ↔ target: tables, columns, types, nullability, keys, collation'],
-      ['Schema change tracking', 'DDL drift over time; flags affected converted objects and tests'],
-      ['Metadata & data validation', 'object inventory, row counts, checksums, sample diffs'],
+      ['Data validation at a snapshot', 'row counts, key sets, checksums, sample diffs on all targets (V-012…V-021 executed)'],
+      ['Serving paths', 'Redshift Spectrum / managed Iceberg tables; Glue Data Catalog multi-dialect views'],
+      ['AI-DLC integration (placeholder)', 'gates and packages mapped to Inception / Construction / Operations; steering + package adapter'],
     ]],
     ['Later', C.violet, C.violetSoft, [
       ['SQL Server stored procedures → Oracle', 'T-SQL → PL/SQL, packages, sequences, exceptions'],
-      ['SQL Server → Amazon Redshift', 'procedures → Redshift stored procedures, reports, dist/sort keys'],
-      ['Informatica ETL → Oracle and Redshift', 'overrides and Pre/Post SQL per target; COPY / UNLOAD'],
+      ['Informatica ETL → Redshift and Oracle', 'overrides and Pre/Post SQL per target; COPY / UNLOAD'],
+      ['Live evidence on Redshift / Athena', 'once test workgroups and databases exist (never created by the kit)'],
     ]],
   ];
   cols.forEach(([h, col, soft, items], i) => {
@@ -482,7 +482,7 @@ slides.push((s, n) => {
   const reuse = ['guardrail hooks', 'migkit: security · audit · lineage · AWS services', 'test engine + coverage gate', 'steering + skill + examples pattern', 'Windows · Linux · macOS scripts'];
   reuse.forEach((r, i) => chip(s, 3.45 + (i % 3) * 3.1, 6.07 + Math.floor(i / 3) * 0.4, 2.95, r, { fill: C.petrol, color: C.paper, size: 10.5, h: 0.32 }));
   footer(s, n);
-  s.addNotes('Next: schema mismatch detection and schema change tracking make the conversion safe while source and target keep evolving; metadata and data validation prove the data, not only the code. Later: new target platforms (Oracle, Amazon Redshift) for both stored procedures and Informatica ETL; each is a new steering file + skill + examples + tests on the same engine and guardrails.');
+  s.addNotes('Delivered in September 2026: five new skills (assessment, Redshift, Iceberg, schema conformance, change propagation) and a governance layer shared by all eight. Next: data validation proves the data, not only the code; serving paths for BI. AI-DLC: the kit already produces reviewable packages per unit of work; integrating with the AI-Driven Development Lifecycle is planned as steering plus an adapter, no code yet. Later: Oracle targets and Informatica ETL to Redshift/Oracle on the same engine and guardrails.');
 });
 
 // 14 — Open items / roadmap
@@ -512,7 +512,7 @@ slides.push((s, n) => {
 slides.push((s) => {
   s.background = { color: C.ink };
   s.addText('Guarded. Tested. Traceable.', { x: 0.8, y: 1.4, w: 11.7, h: 1.0, fontFace: HF, fontSize: 42, bold: true, color: C.paper, margin: 0, isTextBox: true });
-  const msgs = [['Faithful', 'Behaviour parity by rule; every deviation flagged for a business decision'], ['Proven', '611 automated checks and a coverage gate on the real target database'], ['Safe', 'Deterministic guardrails around the agent, the tools and the database'], ['Accountable', 'One run id, tamper-evident audit trail, lineage — locally or in AWS']];
+  const msgs = [['Faithful', 'Behaviour parity by rule; every deviation flagged for a business decision'], ['Proven', '674 automated checks and a coverage gate on the real target database'], ['Safe', 'Deterministic guardrails around the agent, the tools and the database'], ['Accountable', 'One run id, tamper-evident audit trail, lineage — locally or in AWS']];
   msgs.forEach(([h, b], i) => {
     const y = 2.8 + i * 0.95;
     circleNum(s, 0.8, y + 0.08, i + 1, { d: 0.55, size: 18 });

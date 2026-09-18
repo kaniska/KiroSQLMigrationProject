@@ -1,0 +1,2 @@
+{"etl.asset_summary.asset_code": {"rows": 1200, "nulls": 3, "non_numeric": 0, "overflow": 0, "sample_keys": []},
+ "etl.asset_summary.asset_desc": {"rows": 1200, "nulls": 10, "non_numeric": 1187, "overflow": 0, "sample_keys": ["A-1001", "A-1002"]}}

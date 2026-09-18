@@ -1,0 +1,9 @@
+{
+  "catalog": "glue_catalog",
+  "source_table": "glue_catalog.sales_lake.fact_sales",
+  "target_table": "glue_catalog.sales_lake.customer_summary",
+  "merge_keys": ["customer_key"],
+  "update_columns": ["revenue", "last_sale", "_run_id", "_loaded_at"],
+  "watermark_column": "last_sale",
+  "source_sql": "SELECT customer_key, sum(line_total) AS revenue, max(sale_date) AS last_sale FROM src_raw GROUP BY customer_key"
+}

@@ -1,0 +1,1 @@
+{"tests": ["tests/test_iceberg_tool.py"], "catalog": "../references/corner-cases.md", "prefixes": ["IB"], "label": "iceberg"}

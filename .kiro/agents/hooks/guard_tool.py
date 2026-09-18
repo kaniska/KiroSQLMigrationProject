@@ -42,6 +42,9 @@ READ_DENY = re.compile(r"(^|/)\.aws/|(^|/)\.ssh/|(^|/)\.env(\.|$)|\.pem$|id_(rsa
 WRITE_DENY = re.compile(r"(^|/)\.kiro/(steering|agents|skills|settings|hooks)(/|$)|(^|/)logs/(audit|state)(/|$)|(^|/)\.git/", re.I)
 
 
+TOOL_DB = re.compile(r"\b(redshift_tool|iceberg_tool|schema_tool)\.py\b[^\n|;&]*?\s--database[= ]([\w.-]+)", re.I)
+
+
 def psql_databases(cmd: str):
     dbs = []
     for m in re.finditer(r"\bdbname=([\w.-]+)|\bPGDATABASE\s*=\s*['\"]?([\w.-]+)|\bpsql(?:\.exe)?\b[^\n|;&]*?\s(-d|--dbname)[= ]([\w.-]+)", cmd):
@@ -68,6 +71,11 @@ def check_shell(cmd: str):
         crit = [f for f in security.scan_text(unquoted, "sql") if f["rule"] == "SEC-04" and f["severity"] == "critical"]
         if crit:
             return "GRD-06", f"psql with dangerous SQL ({crit[0]['name']}): {crit[0]['message']}"
+    for m in TOOL_DB.finditer(cmd):                              # skill tools that reach Redshift / Athena / Glue
+        if not TEST_DB.search(m.group(2)):
+            return "GRD-06", f"{m.group(1)}.py against database '{m.group(2)}' — only databases whose name contains test/dev/sandbox/local"
+    if re.search(r"\bchange_tool\.py\b[^\n|;&]*\s--apply\b", cmd, re.I):
+        return "GRD-12", "applying change patches to a live target — the tool only produces dry-run packages; deploy reviewed packages through the normal path"
     return None
 
 

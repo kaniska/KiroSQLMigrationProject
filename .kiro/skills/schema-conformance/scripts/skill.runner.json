@@ -1,0 +1,1 @@
+{"tests": ["tests/test_schema_tool.py"], "catalog": "../references/conformance-rules.md", "prefixes": ["SC"], "label": "schema"}

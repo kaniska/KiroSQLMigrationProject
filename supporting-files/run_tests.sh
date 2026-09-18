@@ -68,7 +68,7 @@ if [[ "$MODE" != "skill" ]]; then
     set +e; bash "$ENGINE/pgtest.sh" "$PROJECT_DIR/tests/test_runner.sql"; project_rc=$?; set -e
 fi
 if [[ "$MODE" != "project" ]]; then
-    for skill in sql-conversion sql-reporting informatica-etl-conversion; do
+    for skill in sql-conversion sql-reporting informatica-etl-conversion migration-assessment sql-conversion-redshift sql-conversion-iceberg schema-conformance schema-change-propagation; do
         echo "################ SKILL SELF-TEST: $skill ################"
         set +e; bash "$PROJECT_DIR/.kiro/skills/$skill/scripts/run_skill_tests.sh"; rc=$?; set -e
         [[ $rc -ne 0 ]] && skill_rc=$rc

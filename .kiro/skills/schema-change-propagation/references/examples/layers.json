@@ -1,0 +1,1 @@
+{"protected": ["src.*", "lookup.*"], "editable": ["etl.*"], "editable_files": ["flow/etl_*.sql", "flow/tests_*.sql"]}

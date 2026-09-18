@@ -1,0 +1,1 @@
+{"retain_current_schema": true, "naming": "snake_case", "cast_dispositions": {"etl.asset_summary.asset_desc": {"decision": "REJECTED", "by": "data-owner", "reason": "descriptive text is not numeric"}}, "on_failure": "NULL_AND_QUARANTINE"}

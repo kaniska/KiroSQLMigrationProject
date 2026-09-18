@@ -69,7 +69,7 @@ if ($Mode -ne 'skill') {
     $projectRc = $LASTEXITCODE
 }
 if ($Mode -ne 'project') {
-    foreach ($s in @('sql-conversion', 'sql-reporting', 'informatica-etl-conversion')) {
+    foreach ($s in @('sql-conversion', 'sql-reporting', 'informatica-etl-conversion', 'migration-assessment', 'sql-conversion-redshift', 'sql-conversion-iceberg', 'schema-conformance', 'schema-change-propagation')) {
         Write-Host "################ SKILL SELF-TEST: $s ################"
         & (Join-Path $ProjectDir ".kiro\skills\$s\scripts\run_skill_tests.ps1")
         $rc = $LASTEXITCODE

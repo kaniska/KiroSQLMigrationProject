@@ -1,0 +1,1 @@
+{"tests": ["tests/test_assess_tool.py"], "catalog": "../references/placement-matrix.md", "prefixes": ["MA"], "label": "assess"}

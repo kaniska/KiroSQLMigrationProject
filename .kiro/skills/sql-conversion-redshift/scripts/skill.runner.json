@@ -1,0 +1,1 @@
+{"tests": ["tests/test_redshift_tool.py"], "catalog": "../references/corner-cases.md", "prefixes": ["RS"], "label": "redshift"}

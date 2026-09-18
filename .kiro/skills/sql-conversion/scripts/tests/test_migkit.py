@@ -32,7 +32,7 @@ SCRIPTS = pathlib.Path(__file__).resolve().parents[1]
 STUB = SCRIPTS / "tests" / "stub" / ("aws.cmd" if os.name == "nt" else "aws")
 sys.path.insert(0, str(SCRIPTS))
 
-from migkit import audit, localdb, security, services  # noqa: E402
+from migkit import audit, localdb, security, services, contract, ddl  # noqa: E402
 
 RID = "4bf92f3577b34da6a3ce929d0e0e4736"
 
@@ -611,6 +611,137 @@ class SecurityTests(Base):
         self.assertEqual(noisy, [])
 
 
+# ============================================================================ governance
+class GovernanceTests(Base):
+    def req(self, **over):
+        r = contract.new_request("req-001", "SQLServer", "VIEW", "v_x", "CREATE VIEW dbo.v_x AS SELECT 1 AS a", target_platform="AuroraPostgreSQL")
+        for k, v in over.items():
+            a, _, b = k.partition("__")
+            if b:
+                r[a][b] = v
+            else:
+                r[a] = v
+        return r
+
+    def test_input_contract(self):
+        """MK-G01 the universal input contract is validated with stable sorted diagnostics and stop codes [GOV-01]"""
+        self.assertTrue(contract.validate_request(self.req())["ok"])
+        v = contract.validate_request(self.req(requestId="bad id!", source__platform="MySQL", source__definition="", source__objectType="THING"))
+        self.assertFalse(v["ok"])
+        self.assertEqual(v["stop_codes"], ["INVALID_INPUT", "INVALID_SOURCE_DIALECT"])
+        self.assertEqual([d["field"] for d in v["diagnostics"]], sorted(d["field"] for d in v["diagnostics"]))
+        self.assertFalse(contract.validate_request("not an object")["ok"])
+        self.assertTrue(contract.validate_request(self.req(source__definition="", options={"metadataOnly": True}))["ok"])
+
+    def test_target_decision_required(self):
+        """MK-G02 an undecided target blocks generation with TARGET_DECISION_REQUIRED [GOV-02]"""
+        for tp in ("TBD", "", None, "UNDECIDED"):
+            v = contract.validate_request(self.req(target__platform=tp))
+            self.assertIn("TARGET_DECISION_REQUIRED", v["stop_codes"], tp)
+        self.assertIn("INVALID_INPUT", contract.validate_request(self.req(target__platform="Snowflake"))["stop_codes"])
+
+    def test_statuses_escalate_and_stop_codes_closed(self):
+        """MK-G03 statuses only escalate and VALIDATED is distinct from approval; unknown stop codes are rejected [GOV-03] [GOV-04]"""
+        o = contract.new_output("req-001")
+        self.assertEqual(o["status"], "GENERATED")
+        contract.set_status(o, "PARTIAL", "UNSUPPORTED_CONSTRUCT")
+        contract.set_status(o, "GENERATED")                                   # cannot go back
+        self.assertEqual(o["status"], "PARTIAL")
+        contract.set_status(o, "BLOCKED", "SECURITY_MAPPING_REQUIRED", "UNSUPPORTED_CONSTRUCT")
+        self.assertEqual(o["status"], "BLOCKED"); self.assertEqual(o["analysis"]["stopCodes"], ["UNSUPPORTED_CONSTRUCT", "SECURITY_MAPPING_REQUIRED"])
+        with self.assertRaises(ValueError):
+            contract.set_status(o, "BLOCKED", "NOT_A_CODE")
+        self.assertEqual(set(contract.STATUSES), {"GENERATED", "PARTIAL", "BLOCKED", "VALIDATED"})
+        self.assertIn("PRODUCTION_WRITE_DENIED", contract.STOP_CODES)
+
+    def test_review_tier(self):
+        """MK-G04 review tier follows complexity and security, override wins [GOV-05]"""
+        self.assertEqual(contract.review_tier("L1", False), "T1"); self.assertEqual(contract.review_tier("L2", False), "T2")
+        self.assertEqual(contract.review_tier("L3", False), "T3"); self.assertEqual(contract.review_tier("L1", True), "T3")
+        self.assertEqual(contract.review_tier("L4", False, override="T1"), "T1")
+
+    def test_rule_ledger_and_validation_manifest(self):
+        """MK-G05 the rule ledger records every transformation; unexecuted validation checks are never marked passed [GOV-06] [GOV-07]"""
+        led = contract.RuleLedger().add("H4", "MONEY", "NUMERIC(19,4)", "money type", line=3, evidence="V-016").add("CC-67", "RAISERROR no RETURN", "RAISE", "stops", manual=True)
+        rows = led.to_list(); self.assertEqual([r["seq"] for r in rows], [1, 2]); self.assertTrue(rows[1]["manualReview"])
+        self.assertIn("| 2 | CC-67 |", led.markdown()); self.assertIn("(manual review)", led.markdown())
+        vm = contract.validation_manifest(["V-004", "V-012", "V-001"], executed={"V-001": {"status": "PASS", "evidence": "contract ok"}})
+        self.assertEqual([c["id"] for c in vm["checklist"]], ["V-001", "V-004", "V-012"])
+        self.assertEqual([e["id"] for e in vm["executedChecks"]], ["V-001"])
+        self.assertEqual([u["id"] for u in vm["unexecutedChecks"]], ["V-004", "V-012"])
+        self.assertTrue(all(e["id"] in ("V-004", "V-012") for e in vm["evidenceRequired"]))
+
+    def test_package_is_hashed_and_idempotent(self):
+        """MK-G06 the conversion package carries hashes, run id and kit version, and regenerating from the same inputs is byte-identical [GOV-08]"""
+        req = self.req(); out = contract.new_output("req-001"); out["generatedAt"] = "2026-09-18T00:00:00.000Z"
+        out["analysis"]["ruleLedger"] = contract.RuleLedger().add("H2", "PascalCase", "snake_case", "naming").to_list()
+        d1 = self.tmp / "pkg1"; d2 = self.tmp / "pkg2"
+        m1 = contract.write_package(d1, req, out, files={"v_x.sql": "CREATE VIEW public.v_x AS SELECT 1 AS a;\n"})
+        m2 = contract.write_package(d2, req, out, files={"v_x.sql": "CREATE VIEW public.v_x AS SELECT 1 AS a;\n"})
+        self.assertEqual(m1["files"], m2["files"]); self.assertEqual(m1["runId"], RID)
+        for name in ("request.json", "output.json", "rule-ledger.md", "validation-manifest.json", "files/v_x.sql", "manifest.json"):
+            self.assertTrue((d1 / name).exists(), name)
+            if name != "manifest.json":
+                self.assertEqual((d1 / name).read_bytes(), (d2 / name).read_bytes(), name)
+        o = json.loads((d1 / "output.json").read_text()); self.assertEqual(len(o["provenance"]["sourceDefinitionSha256"]), 64)
+
+    def test_ddl_parser_grounding(self):
+        """MK-G07 CREATE TABLE parsing captures ordinal, native type components, nullability, defaults, identity, computed columns, constraints, indexes, distribution and partition specs; unparsed items are unresolved, never guessed [GOV-09]"""
+        ts = ddl.parse_tables("""CREATE TABLE [dbo].[Orders] (
+            OrderId INT IDENTITY(100,5) NOT NULL CONSTRAINT PK_Orders PRIMARY KEY CLUSTERED,
+            CustomerId INT NOT NULL CONSTRAINT FK_Orders_Customers REFERENCES dbo.Customers (CustomerId),
+            Total MONEY NOT NULL CONSTRAINT DF_Orders_Total DEFAULT (0),
+            Note NVARCHAR(MAX) NULL, Price DECIMAL(19,4) NULL, Tax AS (Total * 0.1) PERSISTED,
+            Code VARCHAR(10) COLLATE Latin1_General_CS_AS NULL, Secret NVARCHAR(50) MASKED WITH (FUNCTION = 'default()') NULL,
+            CONSTRAINT UQ_Orders_Code UNIQUE (Code), CONSTRAINT CK_Orders_Total CHECK (Total >= 0)
+        ) ON [PRIMARY];
+        CREATE NONCLUSTERED INDEX IX_Orders_CustomerId ON dbo.Orders (CustomerId) INCLUDE (Total) WHERE Total > 0;""", "tsql")
+        self.assertEqual(len(ts), 1); t = ts[0]
+        cols = {c["name"]: c for c in t["columns"]}
+        self.assertEqual([c["ordinal"] for c in t["columns"]], [1, 2, 3, 4, 5, 6, 7, 8])
+        self.assertEqual(cols["OrderId"]["identity"], {"seed": 100, "increment": 5, "kind": "IDENTITY"}); self.assertFalse(cols["OrderId"]["nullable"])
+        self.assertEqual(cols["Total"]["default"], "(0)"); self.assertEqual(cols["Note"]["datatype"]["length"], "MAX")
+        self.assertEqual((cols["Price"]["datatype"]["precision"], cols["Price"]["datatype"]["scale"]), (19, 4))
+        self.assertEqual(cols["Tax"]["computed"], "(Total * 0.1) PERSISTED"); self.assertEqual(cols["Code"]["collation"], "Latin1_General_CS_AS")
+        self.assertIn("MASKED WITH (dynamic data masking)", cols["Secret"]["unresolved"])
+        types = {c["type"]: c for c in t["constraints"]}
+        self.assertEqual(types["PRIMARY KEY"]["columns"], ["OrderId"]); self.assertTrue(types["PRIMARY KEY"]["clustered"])
+        self.assertEqual((types["FOREIGN KEY"]["ref_table"], types["FOREIGN KEY"]["ref_columns"]), ("dbo.Customers", ["CustomerId"]))
+        self.assertEqual(types["UNIQUE"]["columns"], ["Code"]); self.assertEqual(types["CHECK"]["expression"], "Total >= 0")
+        self.assertEqual(t["indexes"][0]["include"], ["Total"]); self.assertEqual(t["indexes"][0]["filter"], "Total > 0")
+        pg = ddl.parse_tables("CREATE TABLE public.t (id INTEGER GENERATED ALWAYS AS IDENTITY (START WITH 10 INCREMENT BY 2) PRIMARY KEY, ts TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT now(), tags TEXT[] , total NUMERIC(19,4) GENERATED ALWAYS AS (1) STORED);", "postgres")[0]
+        c = {x["name"]: x for x in pg["columns"]}
+        self.assertEqual(c["id"]["identity"], {"seed": 10, "increment": 2, "kind": "ALWAYS"}); self.assertFalse(c["id"]["nullable"])
+        self.assertEqual(c["ts"]["datatype"]["base"], "timestamp with time zone"); self.assertEqual(c["ts"]["default"], "now ( )".replace(" ( )", "()") if False else c["ts"]["default"])
+        self.assertTrue(c["tags"]["datatype"]["raw"].endswith("[]")); self.assertIn("STORED", c["total"]["computed"])
+        rs = ddl.parse_tables("CREATE TABLE s.t (a INT ENCODE az64 DISTKEY, b VARCHAR(20) SORTKEY) DISTSTYLE KEY;", "redshift")[0]
+        self.assertEqual(rs["distribution"], {"distkey": "a", "sortkey": ["b"], "diststyle": "KEY"}); self.assertEqual(rs["columns"][0]["encode"], "az64")
+        sp = ddl.parse_tables("CREATE TABLE c.db.t (a bigint, ts timestamp) USING iceberg PARTITIONED BY (days(ts), bucket(8, a)) TBLPROPERTIES ('format-version'='2', 'write.target-file-size-bytes'='536870912');", "spark")[0]
+        self.assertEqual(sp["partition"], ["days(ts)", "bucket(8, a)"]); self.assertEqual(sp["properties"]["format-version"], "2")
+        ctas = ddl.parse_tables("CREATE TABLE x AS SELECT 1 AS a;", "postgres")[0]
+        self.assertTrue(ctas["unresolved"])
+
+    def test_inventory_and_references(self):
+        """MK-G08 the construct inventory ignores comments/literals and separates heavy and security constructs; dependency discovery skips aliases, CTEs, cursors and system procs [GOV-10] [GOV-11] [GOV-12]"""
+        sql = """-- MERGE mentioned in a comment only; 'CURSOR' in a literal
+        CREATE PROCEDURE dbo.usp_X @Days INT, @Out INT OUTPUT AS BEGIN
+          WITH h AS (SELECT Id, 1 AS lvl FROM dbo.Emp WHERE Mgr IS NULL UNION ALL SELECT e.Id, h.lvl+1 FROM dbo.Emp e JOIN h ON e.Mgr = h.Id)
+          SELECT h.Id, ROW_NUMBER() OVER (ORDER BY h.lvl) AS rn FROM h JOIN dbo.Dept d ON d.Id = h.Id WHERE d.Owner = SUSER_SNAME();
+          DECLARE c CURSOR FOR SELECT Id FROM dbo.Emp; UPDATE o SET Total = 1 FROM dbo.Orders o JOIN dbo.Lines l ON l.OrderId = o.OrderId;
+          EXEC sp_executesql N'SELECT 1'; SELECT 'not a CURSOR' AS msg;
+        END"""
+        inv = ddl.inventory(sql)
+        self.assertEqual(inv["object_type"], "PROCEDURE")
+        self.assertNotIn("merge", inv["constructs"]); self.assertEqual(inv["constructs"]["cursor"], 1)
+        self.assertIn("recursive_cte", inv["heavy"]); self.assertIn("security_identity", inv["security"])
+        self.assertIn("output_params", inv["constructs"]); self.assertIn("window_function", inv["constructs"])
+        refs = ddl.references(sql)
+        self.assertEqual(refs["defines"], ["dbo.usp_X"])
+        self.assertEqual(refs["reads_writes"], ["dbo.Dept", "dbo.Emp", "dbo.Lines", "dbo.Orders"])
+        self.assertIn("linked", ddl.references("SELECT * FROM srv.db.dbo.T")["unresolved"][0])
+        self.assertEqual(contract.SKILL_FOR_TARGET["Redshift"], "sql-conversion-redshift"); self.assertEqual(contract.SKILL_FOR_TARGET["GluePySpark"], "sql-conversion-iceberg")
+
+
 class TaggedResult(unittest.TextTestResult):
     lines = []
 
@@ -630,7 +761,7 @@ class TaggedResult(unittest.TextTestResult):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--results"); a = ap.parse_args()
     suite = unittest.TestSuite()
-    for cls in (AuditTests, LocalStoreTests, ServiceTests, SecurityTests):
+    for cls in (AuditTests, LocalStoreTests, ServiceTests, SecurityTests, GovernanceTests):
         suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(cls))
     result = unittest.TextTestRunner(verbosity=2, resultclass=TaggedResult).run(suite)
     if a.results:

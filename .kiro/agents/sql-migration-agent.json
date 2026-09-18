@@ -1,8 +1,8 @@
 {
   "name": "sql-migration-agent",
-  "description": "Migrates SQL Server T-SQL (procedures, functions, triggers, DDL) and Informatica PowerCenter XML to PostgreSQL / Aurora with the sql-conversion and informatica-etl-conversion skills, and writes tested reporting SQL with the sql-reporting skill: converts, tests on a test database, updates the migration log and reports review flags, under deterministic guardrail hooks with a correlated, hash-chained audit trail.",
+  "description": "Routes SQL Server migration work to the right skill after intake questions: assessment and placement (migration-assessment), conversion to Aurora PostgreSQL (sql-conversion), Amazon Redshift (sql-conversion-redshift) or Apache Iceberg on S3 with Athena/Glue/Spark (sql-conversion-iceberg), Informatica ETL (informatica-etl-conversion), reporting SQL (sql-reporting), schema gap analysis and conformance (schema-conformance) and governed rename/cast propagation (schema-change-propagation). Every result is statically checked, tested or executed on a test target only, packaged with a rule ledger and validation manifest, under deterministic guardrail hooks with a correlated, hash-chained audit trail.",
   "prompt": "file://./prompts/sql-migration-agent.md",
-  "welcomeMessage": "SQL Server → PostgreSQL migration agent. Try: \"Convert source/usp_X.sql\", \"Migrate everything pending\", \"Convert source/informatica/wf_x.xml\" or \"Monthly revenue by category with YoY growth\".",
+  "welcomeMessage": "SQL Server migration agent (Aurora PostgreSQL · Amazon Redshift · Iceberg on S3 · reporting · Informatica · schema conformance). Try: \"Assess source/ for a BI migration\", \"Convert source/usp_X.sql\", \"Convert source/schema/*.sql to Redshift\", \"Land dbo.FactSales as an Iceberg table partitioned by day(SaleDate)\", \"Compare source/schema with generated/schema.sql\", \"Monthly revenue by category with YoY growth\". More: .kiro/agents/prompts/examples.md",
   "tools": [
     "fs_read",
     "fs_write",
@@ -36,7 +36,19 @@
         "python3 \\.kiro/skills/informatica-etl-conversion/scripts/infa_sql_tool\\.py .*",
         "python3 \\.kiro/skills/sql-conversion/scripts/migkit/services\\.py (status|probe|sync|show-config|guardrail .*|archive .*|exec -- bash supporting-files/run_tests\\.sh.*)",
         "python3 \\.kiro/skills/sql-conversion/scripts/migkit/audit\\.py (tail|verify|current-run-id).*",
-        "python3 \\.kiro/skills/sql-conversion/scripts/migkit/security\\.py (scan|diff|preflight) .*"
+        "python3 \\.kiro/skills/sql-conversion/scripts/migkit/security\\.py (scan|diff|preflight) .*",
+        "bash \\.kiro/skills/migration-assessment/scripts/run_skill_tests\\.sh",
+        "bash \\.kiro/skills/sql-conversion-redshift/scripts/run_skill_tests\\.sh",
+        "bash \\.kiro/skills/sql-conversion-iceberg/scripts/run_skill_tests\\.sh",
+        "bash \\.kiro/skills/schema-conformance/scripts/run_skill_tests\\.sh",
+        "bash \\.kiro/skills/schema-change-propagation/scripts/run_skill_tests\\.sh",
+        "python3 \\.kiro/skills/migration-assessment/scripts/assess_tool\\.py (assess|inventory|validate|questions).*",
+        "python3 \\.kiro/skills/sql-conversion-redshift/scripts/redshift_tool\\.py (convert-ddl|check|ledger|run|package) .*",
+        "python3 \\.kiro/skills/sql-conversion-iceberg/scripts/iceberg_tool\\.py (ddl|check|ledger|job|run|package) .*",
+        "python3 \\.kiro/skills/schema-conformance/scripts/schema_tool\\.py (snapshot|compare|conform|refs|package) .*",
+        "python3 \\.kiro/skills/schema-change-propagation/scripts/change_tool\\.py (ingest|validate|plan|patch|scan|package) .*",
+        "python3 supporting-files/make_skill_runners\\.py( --check)?",
+        "python3 supporting-files/make_windows_agent\\.py( --check)?"
       ],
       "autoAllowReadonly": true
     },
@@ -45,6 +57,9 @@
         "generated/**",
         "tests/**",
         "metadata/migration_log.json",
+        "metadata/design/**",
+        "metadata/schema/**",
+        "metadata/changes/**",
         "source/schema/**",
         "generated/informatica/**",
         "source/informatica/**"
@@ -77,7 +92,19 @@
           "python3 .kiro/skills/sql-conversion/scripts/migkit/audit.py current-run-id*",
           "python3 .kiro/skills/sql-conversion/scripts/migkit/security.py scan *",
           "python3 .kiro/skills/sql-conversion/scripts/migkit/security.py diff *",
-          "python3 .kiro/skills/sql-conversion/scripts/migkit/security.py preflight *"
+          "python3 .kiro/skills/sql-conversion/scripts/migkit/security.py preflight *",
+          "bash .kiro/skills/migration-assessment/scripts/run_skill_tests.sh*",
+          "bash .kiro/skills/sql-conversion-redshift/scripts/run_skill_tests.sh*",
+          "bash .kiro/skills/sql-conversion-iceberg/scripts/run_skill_tests.sh*",
+          "bash .kiro/skills/schema-conformance/scripts/run_skill_tests.sh*",
+          "bash .kiro/skills/schema-change-propagation/scripts/run_skill_tests.sh*",
+          "python3 .kiro/skills/migration-assessment/scripts/assess_tool.py *",
+          "python3 .kiro/skills/sql-conversion-redshift/scripts/redshift_tool.py *",
+          "python3 .kiro/skills/sql-conversion-iceberg/scripts/iceberg_tool.py *",
+          "python3 .kiro/skills/schema-conformance/scripts/schema_tool.py *",
+          "python3 .kiro/skills/schema-change-propagation/scripts/change_tool.py *",
+          "python3 supporting-files/make_skill_runners.py*",
+          "python3 supporting-files/make_windows_agent.py*"
         ],
         "effect": "allow"
       },
@@ -97,7 +124,8 @@
     "file://.kiro/steering/**/*.md",
     "skill://.kiro/skills/*/SKILL.md",
     "file://.kiro/agents/hooks/GUARDRAILS.md",
-    "file://.kiro/skills/sql-conversion/references/security-logging.md"
+    "file://.kiro/skills/sql-conversion/references/security-logging.md",
+    "file://.kiro/agents/prompts/examples.md"
   ],
   "hooks": {
     "agentSpawn": [

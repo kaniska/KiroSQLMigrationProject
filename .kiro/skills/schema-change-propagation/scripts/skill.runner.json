@@ -1,0 +1,1 @@
+{"tests": ["tests/test_change_tool.py"], "catalog": "../references/change-rules.md", "prefixes": ["CP"], "label": "change"}

@@ -23,7 +23,7 @@
 --   DATEADD(week, DATEDIFF(week, 0, d), 0) → DATE_TRUNC('week', d + 1 day):
 --     SQL Server maps Sunday to the FOLLOWING Monday; plain
 --     DATE_TRUNC('week') would map it to the previous Monday
---   SOURCE BEHAVIOUR PRESERVED (flagged for review, see migration_log.json):
+--   TODO: MANUAL REVIEW REQUIRED — source behaviour preserved (see migration_log.json):
 --     BETWEEN <start> AND <end date at 00:00> excludes rows after midnight
 --     on the last day, in both get_monthly_sales_summary and
 --     get_product_performance. Kept identical so old and new reports reconcile.
@@ -79,7 +79,7 @@ BEGIN
         FROM   public.order_lines ol
         JOIN   public.orders      o ON o.order_id   = ol.order_id
         JOIN   public.products    p ON p.product_id = ol.product_id
-        -- SOURCE BEHAVIOUR PRESERVED: end bound is 00:00 on the last day
+        -- TODO: MANUAL REVIEW REQUIRED — source behaviour preserved: end bound is 00:00 on the last day
         WHERE  o.created_at BETWEEN v_start_date AND v_end_date
           AND  o.status <> 'Cancelled'
         GROUP  BY p.category, p.product_id, p.product_name
@@ -96,6 +96,8 @@ $$;
 -- 2a. get_customer_lifetime_value
 --     Converted from: usp_GetCustomerLifetimeValue (result set 1)
 -- ============================================================
+-- TODO: MANUAL REVIEW REQUIRED — two result sets split into two functions; callers that passed
+--       @IncludeReferrals = 1 must also call get_customer_lifetime_value_referrals
 CREATE OR REPLACE FUNCTION public.get_customer_lifetime_value(
     p_customer_id  INTEGER
 )
@@ -268,7 +270,7 @@ BEGIN
         ORDER  BY period_start, revenue DESC
     $q$, v_date_trunc);
 
-    -- SOURCE BEHAVIOUR PRESERVED: DATE parameters compare as 00:00, so rows
+    -- TODO: MANUAL REVIEW REQUIRED — source behaviour preserved: DATE parameters compare as 00:00, so rows
     -- after midnight on p_end_date are excluded (same as SQL Server)
     RETURN QUERY EXECUTE v_sql
         USING p_start_date::TIMESTAMP,   -- $1
