@@ -398,13 +398,13 @@ slides.push((s, n) => {
 // 12 — Tests: numbers
 slides.push((s, n) => {
   s.background = { color: C.paper };
-  title(s, 'Proof: 693 automated checks, one gate', 'Latest full run on Aurora PostgreSQL 17.7 — 0 failures, every catalog rule covered');
-  s.addChart(pres.charts.BAR, [{ name: 'Checks', labels: ['Project suites', 'sql-conversion (SQL)', 'sql-reporting (SQL + dialects)', 'Informatica (SQL)', 'migkit + governance (unit)', 'Informatica tool (unit)', 'Assessment · Redshift · Iceberg · schema · change (unit)', 'Hooks · agents · MCP'], values: [153, 257, 93, 38, 41, 29, 52, 30] }], {
+  title(s, 'Proof: 694 automated checks, one gate', 'Latest full run on Aurora PostgreSQL 17.7 — 0 failures, every catalog rule covered');
+  s.addChart(pres.charts.BAR, [{ name: 'Checks', labels: ['Project suites', 'sql-conversion (SQL)', 'sql-reporting (SQL + dialects)', 'Informatica (SQL)', 'migkit + governance (unit)', 'Informatica tool (unit)', 'Assessment · Redshift · Iceberg · schema · change (unit)', 'Hooks · agents · MCP'], values: [153, 257, 93, 38, 41, 29, 52, 31] }], {
     x: 0.6, y: 1.65, w: 7.3, h: 5.1, barDir: 'bar', chartColors: [C.teal], showValue: true, dataLabelPosition: 'outEnd', dataLabelColor: C.ink, dataLabelFontSize: 12,
     catAxisLabelColor: C.text, catAxisLabelFontSize: 12, valAxisLabelColor: C.muted, valAxisLabelFontSize: 10, valGridLine: { color: 'E3E8EA', size: 0.5 }, catGridLine: { style: 'none' },
     showLegend: false, showTitle: true, title: 'Automated checks by layer', titleFontSize: 14, titleColor: C.ink, catAxisOrientation: 'maxMin',
   });
-  const cov = [['H · P · CC', '27 rules · 86 corner cases'], ['RQ · RP · IC', '23 rules · 15 patterns · 42 cases'], ['SEC · LOG · SVC · GOV', '13 · 8 · 11 · 12 controls'], ['MA · RS · IB · SC · CP', '12 · 52 · 51 · 22 · 20 rules'], ['GRD · HOOK · AG · MCP', '12 guardrails · 5 hooks · 8 agent rules · 4 MCP rules']];
+  const cov = [['H · P · CC', '27 rules · 86 corner cases'], ['RQ · RP · IC', '23 rules · 15 patterns · 42 cases'], ['SEC · LOG · SVC · GOV', '13 · 8 · 11 · 12 controls'], ['MA · RS · IB · SC · CP', '12 · 52 · 51 · 22 · 20 rules'], ['GRD · HOOK · AG · MCP', '12 guardrails · 6 hooks · 8 agent rules · 4 MCP rules']];
   s.addText('Coverage gate: no rule without a test', { x: 8.3, y: 1.8, w: 4.45, h: 0.45, fontFace: HF, fontSize: 15, bold: true, color: C.ink, margin: 0, isTextBox: true });
   cov.forEach(([h, b], i) => {
     const y = 2.4 + i * 0.85;
@@ -512,7 +512,7 @@ slides.push((s, n) => {
 slides.push((s) => {
   s.background = { color: C.ink };
   s.addText('Guarded. Tested. Traceable.', { x: 0.8, y: 1.4, w: 11.7, h: 1.0, fontFace: HF, fontSize: 42, bold: true, color: C.paper, margin: 0, isTextBox: true });
-  const msgs = [['Faithful', 'Behaviour parity by rule; every deviation flagged for a business decision'], ['Proven', '693 automated checks and a coverage gate on the real target database'], ['Safe', 'Deterministic guardrails around the agent, the tools and the database'], ['Accountable', 'One run id, tamper-evident audit trail, lineage — locally or in AWS']];
+  const msgs = [['Faithful', 'Behaviour parity by rule; every deviation flagged for a business decision'], ['Proven', '694 automated checks and a coverage gate on the real target database'], ['Safe', 'Deterministic guardrails around the agent, the tools and the database'], ['Accountable', 'One run id, tamper-evident audit trail, lineage — locally or in AWS']];
   msgs.forEach(([h, b], i) => {
     const y = 2.8 + i * 0.95;
     circleNum(s, 0.8, y + 0.08, i + 1, { d: 0.55, size: 18 });

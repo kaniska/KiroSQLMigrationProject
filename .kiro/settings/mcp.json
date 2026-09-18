@@ -90,6 +90,24 @@
         "audit_tail"
       ],
       "_comment": "PLACEHOLDER/preview: read-only and dry-run kit tools over MCP (supporting-files/mcp/README.md). Enable with disabled=false; Windows: command python, args supporting-files\\\\mcp\\\\kit_mcp_server.py"
+    },
+    "sqlmigration-kit-windows": {
+      "command": "python",
+      "args": [
+        "-X",
+        "utf8",
+        "supporting-files\\mcp\\kit_mcp_server.py"
+      ],
+      "env": {
+        "MIGRATION_OFFLINE": "0",
+        "PYTHONUTF8": "1"
+      },
+      "disabled": true,
+      "autoApprove": [
+        "toolbox",
+        "audit_tail"
+      ],
+      "_comment": "Windows twin of sqlmigration-kit (python instead of python3). Enable one of the two, never both."
     }
   }
 }

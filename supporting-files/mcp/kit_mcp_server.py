@@ -115,6 +115,11 @@ def handle(msg: dict):
 
 
 def serve(inp=sys.stdin, out=sys.stdout):
+    for stream in (inp, out):  # Windows: UTF-8 and LF-delimited messages, never CRLF or the ANSI code page
+        try:
+            stream.reconfigure(encoding="utf-8", newline="\n")
+        except (AttributeError, ValueError):
+            pass
     LOG.log("mcp.start", SERVER_VERSION, root=str(ROOT))
     for line in inp:
         line = line.strip()

@@ -79,3 +79,17 @@ def detach_kwargs() -> dict:
         flags = getattr(subprocess, "DETACHED_PROCESS", 0x00000008) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
         return {"creationflags": flags, "close_fds": True}
     return {"start_new_session": True}
+
+
+def find_executable(name: str) -> str | None:
+    """PATH lookup that also finds psql/aws where the Windows installers put them (PostgreSQL\<ver>\bin, Amazon\AWSCLIV2)."""
+    import glob
+    import shutil
+    found = shutil.which(name)
+    if found or not IS_WINDOWS:
+        return found
+    roots = [os.environ.get("ProgramFiles", r"C:\Program Files"), os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")]
+    patterns = {"psql": [os.path.join(r, "PostgreSQL", "*", "bin", "psql.exe") for r in roots],
+                "aws": [os.path.join(r, "Amazon", "AWSCLIV2", "aws.exe") for r in roots]}.get(name, [])
+    hits = sorted((h for pat in patterns for h in glob.glob(pat)), reverse=True)
+    return hits[0] if hits else None

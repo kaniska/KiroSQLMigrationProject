@@ -316,9 +316,9 @@ const body = [
   ...layers([
     { label: 'Engine', fill: PAL.tool, boxes: ['preflight\nSEC-12', 'guard_and_reset\ntest DB · no superuser · run id', 'framework\nassert equal/true/raises/sqlstate', 'report\nsummary · exit code · results file'] },
     { label: 'Suites', fill: PAL.skill, boxes: ['project suites\n153', 'sql-conversion\n257 SQL', 'sql-reporting\n88 SQL', 'informatica\n38 SQL'] },
-    { label: 'Unit / hooks', fill: PAL.kiro, boxes: ['migkit + governance\n41 (stub AWS CLI)', 'infa_sql_tool\n29 · report dialects 5', 'assessment · Redshift · Iceberg · schema · change\n12 · 13 · 10 · 8 · 9', 'agent hooks 18\nagents 8 · MCP 4'] },
+    { label: 'Unit / hooks', fill: PAL.kiro, boxes: ['migkit + governance\n41 (stub AWS CLI)', 'infa_sql_tool\n29 · report dialects 5', 'assessment · Redshift · Iceberg · schema · change\n12 · 13 · 10 · 8 · 9', 'agent hooks 19\nagents 8 · MCP 4'] },
     { label: 'Coverage gate', fill: PAL.data, boxes: ['H · P · CC', 'RQ · RP · RD', 'IC', 'SEC · LOG · SVC · GOV', 'MA · RS · IB · SC · CP', 'GRD · HOOK · AG · MCP'] },
-  ], 'Figure 10 — 693 checks; every catalog row marked auto must be covered by a tagged test.'),
+  ], 'Figure 10 — 694 checks; every catalog row marked auto must be covered by a tagged test.'),
   table([2800, 6226], ['Test type', 'What it proves'], [
     ['Behaviour / parity tests', 'Converted routines return the same results as the source, including preserved bugs'],
     ['Worked-example tests', 'Every example in every skill runs on PostgreSQL, so templates are correct'],

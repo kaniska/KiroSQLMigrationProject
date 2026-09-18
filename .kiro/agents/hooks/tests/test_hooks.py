@@ -226,6 +226,13 @@ class PlatformParityTests(unittest.TestCase):
         p = subprocess.run([sys.executable, str(root / "supporting-files" / "make_windows_agent.py"), "--check"], capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
 
+    def test_hook06_windows_readiness(self):
+        """HK-P02 the static Windows readiness check passes: launchers, BOM/CRLF, balanced .ps1 syntax, resolvable references, no twin drift, generators and agents in sync, Windows mcp.json variants, UTF-8 test guards [HOOK-06]"""
+        root = HOOKS.parents[2]
+        p = subprocess.run([sys.executable, str(root / "supporting-files" / "check_windows_readiness.py")], capture_output=True, text=True)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertIn("WINDOWS READINESS: PASS", p.stdout)
+
 
 class AuditHookTests(HookBase):
     def test_hook01_spawn_session_and_security_notice(self):

@@ -28,7 +28,7 @@ sys.path.insert(0, str(_KIT))
 try:
     from migkit import contract, ddl, security
     from migkit.audit import AuditLogger, now_rfc3339, sha256_bytes
-    from migkit.platform_compat import utf8_stdio
+    from migkit.platform_compat import utf8_stdio, find_executable
 except ImportError as _ex:
     sys.stderr.write(f"ERROR: migkit not found at {_KIT} ({_ex}); install the sql-conversion skill next to this one\n")
     sys.exit(2)
@@ -162,16 +162,17 @@ def snapshot_live(schema: str) -> dict:
     db = os.environ.get("PGDATABASE", "")
     if not TEST_DB.search(db):
         raise SecurityRefusal(f"PGDATABASE '{db}' is not a test database (name must contain test/dev/sandbox/local)")
-    if shutil.which("psql") is None:
-        raise SystemExit("psql not found")
+    psql = find_executable("psql")
+    if psql is None:
+        raise SystemExit("psql not found (install the PostgreSQL client; on Windows the installer's bin folder is searched too)")
     env = dict(os.environ, PGCONNECT_TIMEOUT=os.environ.get("PGCONNECT_TIMEOUT", "15"), PGAPPNAME=f"schema_tool {LOG.run_id[:8]}")
     if os.environ.get("PG_IAM_AUTH") == "1":
-        cmd = ["aws", "rds", "generate-db-auth-token", "--hostname", env["PGHOST"], "--port", env.get("PGPORT", "5432"), "--username", env["PGUSER"], "--region", env["AWS_REGION"]]
+        cmd = [find_executable("aws") or "aws", "rds", "generate-db-auth-token", "--hostname", env["PGHOST"], "--port", env.get("PGPORT", "5432"), "--username", env["PGUSER"], "--region", env["AWS_REGION"]]
         tok = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if tok.returncode != 0:
             raise SystemExit("could not generate an IAM auth token (check AWS credentials)")
         env["PGPASSWORD"] = tok.stdout.strip(); env.setdefault("PGSSLMODE", "require")  # never logged
-    r = subprocess.run(["psql", "-X", "-At", "-v", "ON_ERROR_STOP=1", "-c", "SET default_transaction_read_only = on;", "-c", live_query(schema)], capture_output=True, text=True, env=env, timeout=120)
+    r = subprocess.run([psql, "-X", "-At", "-v", "ON_ERROR_STOP=1", "-c", "SET default_transaction_read_only = on;", "-c", live_query(schema)], capture_output=True, text=True, env=env, timeout=120)
     if r.returncode != 0:
         raise SystemExit(f"psql failed: {(r.stderr or '').strip().splitlines()[-1:] or ['unknown error']}")
     body = "\n".join(l for l in r.stdout.splitlines() if l.strip() not in ("SET", ""))  # json_agg output spans lines; drop command tags

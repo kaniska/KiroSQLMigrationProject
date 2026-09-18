@@ -8,7 +8,7 @@
   "last_test_run": {
     "date": "2026-09-18",
     "command": "bash supporting-files/run_tests.sh",
-    "run_id": "168ac6d6cd3549f5b0bdbc35decbb314",
+    "run_id": "6e888b8a19ea495f97ded09d21c0c6cb",
     "target": "database-1.cluster-ck1imm86sh9q.us-east-1.rds.amazonaws.com / sql_migration_test (PostgreSQL 17.7)",
     "project_suites": {
       "passed": 153,
@@ -53,10 +53,10 @@
       }
     },
     "agent_hooks": {
-      "passed": 18,
-      "coverage": "12/12 GRD, 5/5 HOOK"
+      "passed": 19,
+      "coverage": "12/12 GRD, 6/6 HOOK (HOOK-06 Windows readiness)"
     },
-    "passed": 693,
+    "passed": 694,
     "failed": 0,
     "errors": 0,
     "result": "ALL TESTS PASSED",
@@ -450,5 +450,15 @@
   "mcp": {
     "inbound": ".kiro/settings/mcp.json (PostgreSQL, SQL Server, AWS Knowledge, AWS Documentation, AWS API — disabled)",
     "outbound_placeholder": "supporting-files/mcp/kit_mcp_server.py — read-only kit tools over MCP stdio (MCP-01..04), registered as sqlmigration-kit (disabled)"
+  },
+  "windows": {
+    "readiness_check": "python3 supporting-files/check_windows_readiness.py (HOOK-06, part of run_tests): twins with BOM/CRLF and launchers, balanced PowerShell syntax, references resolve, no twin drift, generators and Windows agents in sync, mcp.json Windows variants",
+    "agents": [
+      "sql-migration-agent-windows",
+      "sql-reporting-agent-windows"
+    ],
+    "mcp": "sqlmigration-kit-windows (python -X utf8)",
+    "executed_on_windows": false,
+    "note": "PowerShell/.cmd scripts are verified statically and structurally on macOS (no pwsh available); run supporting-files\\run_tests.cmd and verify_agents.cmd once on a Windows machine"
   }
 }

@@ -44,7 +44,7 @@ CloudWatch Logs, DataZone, Bedrock Guardrails, S3 Object Lock, Secrets Manager �
 local store when not configured or unavailable.
 
 **Status (2026-09-18):** `bash supporting-files/run_tests.sh` → **RESULT: PASS** on Aurora PostgreSQL 17.7
-(693 checks, run `168ac6d6…`): project suites, eight skill self-tests (five of them without a
+(694 checks, run `6e888b8a…`): project suites, eight skill self-tests (five of them without a
 database; Redshift, Athena and Glue paths through a stub AWS CLI; the schema skill also compared
 the live Aurora test database), agent hooks and the coverage gate. Every rule, corner case,
 security control, logging rule, governance rule and hook guardrail has a tagged test.
@@ -216,7 +216,9 @@ same arguments. See [Windows, Linux and macOS](#windows-linux-and-macos) below.
 | Test engine | `bash .kiro/skills/sql-conversion/scripts/pgtest.sh <manifest>` | `.kiro\skills\sql-conversion\scripts\pgtest.cmd <manifest> -Results <file>` |
 | Batch migration | `bash supporting-files/kiro_migrate.sh` | `supporting-files\kiro_migrate.cmd` |
 | Package as zip (includes `.kiro`) | `bash supporting-files/package.sh` | `supporting-files\package.cmd` |
-| Agent | `kiro-cli chat --agent sql-migration-agent` | `kiro-cli chat --agent sql-migration-agent-windows` |
+| Agents | `kiro-cli chat --agent sql-migration-agent` · `--agent sql-reporting-agent` | `kiro-cli chat --agent sql-migration-agent-windows` · `--agent sql-reporting-agent-windows` |
+| Verify the agents | `bash supporting-files/verify_agents.sh [--smoke]` | `supporting-files\verify_agents.cmd [--smoke]` |
+| Windows readiness check | `python3 supporting-files/check_windows_readiness.py` | `python supporting-files\check_windows_readiness.py` |
 | Python tools | `python3 .kiro/…/migkit/audit.py tail` | `python .kiro\…\migkit\audit.py tail` |
 
 How portability is kept:
@@ -228,6 +230,8 @@ How portability is kept:
 - **PowerShell scripts** set `PYTHONUTF8=1` and find `python`, `python3` or `py -3`. They find `psql` on `PATH` or under `C:\Program Files\PostgreSQL\<version>\bin`.
 - **`sql-migration-agent-windows.json`** is generated from the main agent by `supporting-files/make_windows_agent.py`. It keeps the same tools, resources, write paths, MCP servers and hooks, and runs `python -X utf8` and `.cmd` commands. A test fails if it drifts.
 - **`.gitattributes`** keeps `.sh` files LF and `.cmd`/`.ps1` files CRLF, and never converts Informatica XML or `.prm` files, which are compared byte for byte.
+- **Readiness is checked on every run:** `python3 supporting-files/check_windows_readiness.py` (hook rule `HOOK-06`, part of `run_tests.sh`) verifies that every `.sh` has a BOM/CRLF `.ps1` twin and a `.cmd` launcher, that the PowerShell files are syntactically balanced and reference existing files, that hand-written twins run the same tests, catalogs and rule prefixes as their `.sh`, that the generated twins (`make_skill_runners.py`) and Windows agents (`make_windows_agent.py`) are in sync, and that `mcp.json` has a Windows variant (`sqlmigration-kit-windows`, `python -X utf8`) of the kit MCP server.
+- **Windows tool lookup:** the Python tools find `psql.exe` and `aws.exe` under `Program Files` when they are not on `PATH` (`migkit.platform_compat.find_executable`), the PowerShell scripts do the same (`Find-MigPsql`), and every test re-executes itself in UTF-8 mode (`python -X utf8`).
 
 ### The `.kiro` folder is part of the project
 
@@ -689,7 +693,7 @@ raises / sqlstate`, `test_error`, `test_record`) → static checks → suites �
 | schema-conformance: 22 rules, project regression source ↔ generated (+ live Aurora when configured) — SC | 8 |
 | schema-change-propagation: 20 rules, worked example flow — CP | 9 |
 | sql-reporting dialects: Redshift/Athena/Spark examples and RD-01..18 through `report_tool.py` | 5 |
-| Agent hooks: guardrails GRD-01..12, audit hooks HOOK-01..05 | 18 |
+| Agent hooks: guardrails GRD-01..12, audit and platform hooks HOOK-01..06 (incl. the Windows readiness check) | 19 |
 | Agents: structure, allow-lists, separation of concerns, Windows twins, `kiro-cli agent validate` — AG-01..08 | 8 |
 | Kit MCP server (placeholder): protocol, catalog, calls, argument validation — MCP-01..04 | 4 |
 
